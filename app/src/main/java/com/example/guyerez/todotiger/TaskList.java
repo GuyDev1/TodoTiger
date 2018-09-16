@@ -5,10 +5,15 @@ package com.example.guyerez.todotiger;
 public class TaskList {
 
     /** The list's title */
-    private String mTitle;
+    private String mTitle="";
 
     /** The number of tasks in the list */
     private int mTaskNum=0;
+
+
+    public TaskList() {
+        // Default constructor required for calls to DataSnapshot.getValue(TaskList.class)
+    }
 
     /**
      * Constructs a new {@link TaskList} object.
@@ -20,10 +25,17 @@ public class TaskList {
     }
 
     /**
-     * Returns the list's title.
+     * Sets the list's title.
      */
-    public int setTaskNum() {
-        return mTaskNum;
+    public void setTitle(String title) {
+        mTitle=title;
+    }
+
+    /**
+     * Sets the number of tasks in the list.
+     */
+    public void setTaskNum(int taskNum) {
+        mTaskNum=taskNum;
     }
 
     /**
