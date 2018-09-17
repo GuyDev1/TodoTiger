@@ -101,9 +101,12 @@ public class TaskActivity extends AppCompatActivity {
                         .setPositiveButton("Create",
                                 new DialogInterface.OnClickListener() {
                                     public void onClick(DialogInterface dialog,int id) {
-                                        // Get list title from user and create a new task
-                                        Task task = new Task(userInput.getText().toString(),false);
-                                        mTaskDatabaseReference.push().setValue(task);
+
+                                        // Get task title from user and create a new task
+                                        //Also fetch the FireBase ID and connect it to the new task.
+                                        String taskId = mTaskDatabaseReference.push().getKey();
+                                        Task task = new Task(userInput.getText().toString(),false,taskId);
+                                        mTaskDatabaseReference.child(taskId).setValue(task);
                                     }
                                 })
                         .setNegativeButton("Cancel",

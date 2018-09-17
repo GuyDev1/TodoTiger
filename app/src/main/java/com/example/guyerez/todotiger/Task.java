@@ -10,6 +10,10 @@ public class Task {
     /** Task completed or not */
     private boolean mCompleted=false;
 
+    /** The task's ID on FireBase DB */
+    private String mId;
+
+
 
     public Task() {
         // Default constructor required for calls to DataSnapshot.getValue(Task.class)
@@ -19,11 +23,13 @@ public class Task {
      * Constructs a new {@link Task} object.
      * @param title is the title of the task list
      * @param completed indicates whether the task is completed or not
+     * @param id is the list's ID from FireBase
      */
 
-    public Task(String title, boolean completed) {
+    public Task(String title, boolean completed, String id) {
         mTitle = title;
         mCompleted=completed;
+        mId=id;
     }
 
     /**
@@ -40,6 +46,13 @@ public class Task {
         mCompleted=completed;
     }
 
+    /**
+     * Sets the task's ID.
+     */
+    public void setId(String id) {
+        mId=id;
+    }
+
 
     /**
      * Returns the task's title.
@@ -53,6 +66,13 @@ public class Task {
      */
     public boolean getCompleted() {
         return mCompleted;
+    }
+
+    /**
+     * Returns the task's ID.
+     */
+    public String getId() {
+        return mId;
     }
 
 }

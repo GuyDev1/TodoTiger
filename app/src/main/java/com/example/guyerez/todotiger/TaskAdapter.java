@@ -10,6 +10,9 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.TextView;
 
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -19,6 +22,10 @@ import java.util.Locale;
  */
 
 public class TaskAdapter extends ArrayAdapter<Task> {
+
+    //Define FireBase instance variables
+    private DatabaseReference mTaskDatabaseReference;
+    private FirebaseDatabase mFirebaseDatabase;
     /**
      * Create a new {@link TaskAdapter} object.
      *
@@ -40,21 +47,32 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                     R.layout.task_item, parent, false);
         }
         // Get the {@link Task} object located at this position in the list
-        Task currentTask = getItem(position);
+        final Task currentTask = getItem(position);
 
         // Locate the TextView in the task_item.xml layout with the ID task_title.
         TextView titleTextView = (TextView) listItemView.findViewById(R.id.task_title);
         // Get the task list's title from the currentTaskList object and set it in the text view
         titleTextView.setText(currentTask.getTitle());
-
-        // Find the CheckBox in the task_item.xml layout with the ID check_box.
         CheckBox checkBox = (CheckBox) listItemView.findViewById(R.id.check_box);
+        checkBox.setChecked(currentTask.getCompleted());
+
+        // Initialize Firebase DB
+        mFirebaseDatabase = FirebaseDatabase.getInstance();
+        //Get the task DB reference to edit task completion status
+        mTaskDatabaseReference=mFirebaseDatabase.getReference()
+                .child("users").child(MainActivity.getCurrentUserId())
+                .child(MainActivity.getCurrentTaskListId()).child("tasks").child(currentTask.getId());
+        // Find the CheckBox in the task_item.xml layout with the ID check_box.
+
         checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView,boolean isChecked) {
                 if(isChecked){
-                    Log.d("checked status: ","true");
+                    mTaskDatabaseReference.child("completed").setValue(true);
                     }
+                    else{
+                    mTaskDatabaseReference.child("completed").setValue(false);
+                }
 
                     }
         }
