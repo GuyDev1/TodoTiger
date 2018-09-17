@@ -72,7 +72,6 @@ public class TaskActivity extends AppCompatActivity {
         //Get reference for the task list for the logged in user and attach the database listener
         mTaskDatabaseReference=mFirebaseDatabase.getReference().child("users").child(MainActivity.getCurrentUserId()).child(MainActivity.getCurrentTaskListId()).child("tasks");
         View loadingIndicator = findViewById(R.id.loading_indicator);
-        attachDatabaseReadListener();
         loadingIndicator.setVisibility(View.GONE);
         mEmptyStateTextView.setText("No tasks, add a new one!");
 
@@ -129,6 +128,7 @@ public class TaskActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        attachDatabaseReadListener();
     }
     @Override
     protected void onPause() {
