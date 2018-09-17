@@ -161,10 +161,10 @@ public class MainActivity extends AppCompatActivity {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-                // Find the current earthquake that was clicked on
+                // Find the current task list that was clicked on
                 TaskList currentTaskList = mTaskListAdapter.getItem(position);
 
-                //update the current task list that was chosen by the user
+                //get the current task list's ID
                 currentTaskListId=currentTaskList.getId();
 
 
@@ -275,5 +275,6 @@ public class MainActivity extends AppCompatActivity {
     public static String getCurrentUserId() {
         return currentUserId;
     }
+
 
 }

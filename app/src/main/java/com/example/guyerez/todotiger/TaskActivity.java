@@ -30,6 +30,9 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.MutableData;
+import com.google.firebase.database.Transaction;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,12 +40,14 @@ import java.util.Arrays;
 public class TaskActivity extends AppCompatActivity {
     final Context context = this;
     private TaskAdapter mTaskAdapter;
+    private int taskCount;
     /** TextView that is displayed when the list is empty */
     private TextView mEmptyStateTextView;
 
     // Firebase instance variables
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mTaskDatabaseReference;
+    private DatabaseReference mTaskNumDatabaseReference;
     private ChildEventListener mChildEventListener;
 
     @Override
@@ -70,7 +75,12 @@ public class TaskActivity extends AppCompatActivity {
         listView.setAdapter(mTaskAdapter);
 
         //Get reference for the task list for the logged in user and attach the database listener
-        mTaskDatabaseReference=mFirebaseDatabase.getReference().child("users").child(MainActivity.getCurrentUserId()).child(MainActivity.getCurrentTaskListId()).child("tasks");
+        mTaskDatabaseReference=mFirebaseDatabase.getReference().child("users")
+                .child(MainActivity.getCurrentUserId())
+                .child(MainActivity.getCurrentTaskListId()).child("tasks");
+        mTaskNumDatabaseReference=mFirebaseDatabase.getReference().child("users")
+                .child(MainActivity.getCurrentUserId())
+                .child(MainActivity.getCurrentTaskListId());
         View loadingIndicator = findViewById(R.id.loading_indicator);
         loadingIndicator.setVisibility(View.GONE);
         mEmptyStateTextView.setText("No tasks, add a new one!");
@@ -107,6 +117,11 @@ public class TaskActivity extends AppCompatActivity {
                                         String taskId = mTaskDatabaseReference.push().getKey();
                                         Task task = new Task(userInput.getText().toString(),false,taskId);
                                         mTaskDatabaseReference.child(taskId).setValue(task);
+
+                                        //Count that task in the list's task count
+                                        mTaskNumDatabaseReference.child("taskNum").setValue(taskCount+1);
+
+
                                     }
                                 })
                         .setNegativeButton("Cancel",
@@ -124,8 +139,20 @@ public class TaskActivity extends AppCompatActivity {
             }
         });
 
+        //add listener to get the current task count in this specific task list
+        mTaskNumDatabaseReference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                TaskList taskList = dataSnapshot.getValue(TaskList.class);
+                taskCount=taskList.getTaskNum();
+                Log.d("post count: ", "" + taskCount);
+            }
 
-
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                System.out.println("The read failed: " + databaseError.getCode());
+            }
+        });
     }
 
     @Override
@@ -166,6 +193,7 @@ public class TaskActivity extends AppCompatActivity {
             mChildEventListener = null;
         }
     }
+
 
 
 }
