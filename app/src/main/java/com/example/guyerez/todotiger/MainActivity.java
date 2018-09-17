@@ -14,6 +14,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -37,8 +38,8 @@ public class MainActivity extends AppCompatActivity {
 
     final Context context = this;
     public static final int SIGN_IN = 1;
-    private String mUserId;
-    private ListView mMessageListView;
+    public static String currentTaskListId;
+    public static String currentUserId;
     private TaskListAdapter mTaskListAdapter;
     /** TextView that is displayed when the list is empty */
     private TextView mEmptyStateTextView;
@@ -71,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
                 FirebaseUser user = firebaseAuth.getCurrentUser();
                 if (user != null) {
                     // user is signed in
+                    currentUserId=user.getUid();
                     onSignedInInitialize(user.getUid());
 
                 } else {
@@ -134,8 +136,10 @@ public class MainActivity extends AppCompatActivity {
                                 new DialogInterface.OnClickListener() {
                                     public void onClick(DialogInterface dialog,int id) {
                                         // Get list title from user and create a new task list
-                                        TaskList taskList = new TaskList(userInput.getText().toString());
-                                        mTaskListDatabaseReference.push().setValue(taskList);
+                                        //Also fetch the FireBase ID and connect it to the new task list.
+                                        String mTaskListId = mTaskListDatabaseReference.push().getKey();
+                                        TaskList taskList = new TaskList(userInput.getText().toString(),mTaskListId);
+                                        mTaskListDatabaseReference.child(mTaskListId).setValue(taskList);
                                     }
                                 })
                         .setNegativeButton("Cancel",
@@ -150,6 +154,25 @@ public class MainActivity extends AppCompatActivity {
 
                 // Show the dialog
                 alertDialog.show();
+            }
+        });
+        // Set an item click listener on the ListView, which creates an intent to open
+        //the relevant task list and show the tasks inside.
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+                // Find the current earthquake that was clicked on
+                TaskList currentTaskList = mTaskListAdapter.getItem(position);
+
+                //update the current task list that was chosen by the user
+                currentTaskListId=currentTaskList.getId();
+
+
+                // Create a new intent to view the tasks in the chosen list
+                Intent taskIntent = new Intent(MainActivity.this, TaskActivity.class);
+
+                // Send the intent to launch a new activity
+                startActivity(taskIntent);
             }
         });
 
@@ -209,8 +232,12 @@ public class MainActivity extends AppCompatActivity {
 
         //Get reference for the task list for the logged in user and attach the database listener
         mTaskListDatabaseReference=mFirebaseDatabase.getReference().child("users").child(userId);
+        View loadingIndicator = findViewById(R.id.loading_indicator);
         attachDatabaseReadListener();
+        loadingIndicator.setVisibility(View.GONE);
         mEmptyStateTextView.setText("No task lists, add a new one!");
+
+
     }
 
     private void onSignedOutCleanup() {
@@ -233,12 +260,20 @@ public class MainActivity extends AppCompatActivity {
 
         }
         mTaskListDatabaseReference.addChildEventListener(mChildEventListener);
+
     }
     private void detachDatabaseReadListener() {
         if (mChildEventListener != null) {
             mTaskListDatabaseReference.removeEventListener(mChildEventListener);
             mChildEventListener = null;
         }
+    }
+
+    public static String getCurrentTaskListId() {
+        return currentTaskListId;
+    }
+    public static String getCurrentUserId() {
+        return currentUserId;
     }
 
 }

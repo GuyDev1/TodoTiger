@@ -38,7 +38,6 @@ public class TaskListAdapter extends ArrayAdapter<TaskList> {
             listItemView = LayoutInflater.from(getContext()).inflate(
                     R.layout.tlist_item, parent, false);
         }
-
         // Get the {@link TaskList} object located at this position in the list
         TaskList currentTaskList = getItem(position);
 

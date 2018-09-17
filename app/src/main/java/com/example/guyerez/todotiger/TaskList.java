@@ -10,6 +10,9 @@ public class TaskList {
     /** The number of tasks in the list */
     private int mTaskNum=0;
 
+    /** The task list's ID on FireBase DB */
+    private String mId;
+
 
     public TaskList() {
         // Default constructor required for calls to DataSnapshot.getValue(TaskList.class)
@@ -18,10 +21,12 @@ public class TaskList {
     /**
      * Constructs a new {@link TaskList} object.
      * @param title is the title of the task list
+     * @param id is the list's ID from FireBase
      */
 
-    public TaskList(String title) {
+    public TaskList(String title, String id) {
         mTitle = title;
+        mId=id;
     }
 
     /**
@@ -39,6 +44,13 @@ public class TaskList {
     }
 
     /**
+     * Sets the list's ID.
+     */
+    public void setId(String id) {
+        mId=id;
+    }
+
+    /**
      * Returns the list's title.
      */
     public String getTitle() {
@@ -50,6 +62,13 @@ public class TaskList {
      */
     public int getTaskNum() {
         return mTaskNum;
+    }
+
+    /**
+     * Returns the list's ID from FireBase.
+     */
+    public String getId() {
+        return mId;
     }
 
     }
