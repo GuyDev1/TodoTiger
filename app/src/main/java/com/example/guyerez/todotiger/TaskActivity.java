@@ -37,8 +37,11 @@ import com.google.firebase.database.MutableData;
 import com.google.firebase.database.Transaction;
 import com.google.firebase.database.ValueEventListener;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.Locale;
 
 public class TaskActivity extends AppCompatActivity {
     final Context context = this;
@@ -46,7 +49,7 @@ public class TaskActivity extends AppCompatActivity {
     private int taskCount;
     // TextView that is displayed when the list is empty //
     private TextView mEmptyStateTextView;
-    //TextView that is displayed when the list is empty//
+    //The loading indicator //
     private View loadingIndicator;
     //Edit text and button for creating new tasks quickly
     private EditText mTaskEditText;
@@ -97,8 +100,10 @@ public class TaskActivity extends AppCompatActivity {
             public void onClick(View view) {
                 // Get task title from user and create a new task
                 //Also fetch the FireBase ID and connect it to the new task.
+                //And finally get the task's creation date
+                String creationDate ="Created: " + new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
                 String taskId = mTaskDatabaseReference.push().getKey();
-                Task task = new Task(mTaskEditText.getText().toString(),false,taskId);
+                Task task = new Task(mTaskEditText.getText().toString(),false,taskId,creationDate);
                 mTaskDatabaseReference.child(taskId).setValue(task);
 
                 //Count that task in the list's task count
@@ -169,8 +174,11 @@ public class TaskActivity extends AppCompatActivity {
 
                                         // Get task title from user and create a new task
                                         //Also fetch the FireBase ID and connect it to the new task.
+                                        //And finally get the task's creation date
+                                        String creationDate = "Created: " + new SimpleDateFormat
+                                                ("yyyy-MM-dd", Locale.getDefault()).format(new Date());
                                         String taskId = mTaskDatabaseReference.push().getKey();
-                                        Task task = new Task(userInput.getText().toString(),false,taskId);
+                                        Task task = new Task(userInput.getText().toString(),false,taskId,creationDate);
                                         mTaskDatabaseReference.child(taskId).setValue(task);
 
                                         //Count that task in the list's task count

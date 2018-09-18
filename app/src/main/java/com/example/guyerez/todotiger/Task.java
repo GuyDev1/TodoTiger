@@ -13,6 +13,9 @@ public class Task {
     /** The task's ID on FireBase DB */
     private String mId;
 
+    /** The task's creation date */
+    private String mCreationDate;
+
 
 
     public Task() {
@@ -21,15 +24,17 @@ public class Task {
 
     /**
      * Constructs a new {@link Task} object.
-     * @param title is the title of the task list
+     * @param title is the task's title
      * @param completed indicates whether the task is completed or not
-     * @param id is the list's ID from FireBase
+     * @param id is the task's ID from FireBase
+     * @param creationDate is the task's creation date
      */
 
-    public Task(String title, boolean completed, String id) {
+    public Task(String title, boolean completed, String id, String creationDate) {
         mTitle = title;
         mCompleted=completed;
         mId=id;
+        mCreationDate=creationDate;
     }
 
     /**
@@ -53,6 +58,13 @@ public class Task {
         mId=id;
     }
 
+    /**
+     * Sets the task's creation date.
+     */
+    public void setCreationDate(String creationDate) {
+        mCreationDate=creationDate;
+    }
+
 
     /**
      * Returns the task's title.
@@ -73,6 +85,13 @@ public class Task {
      */
     public String getId() {
         return mId;
+    }
+
+    /**
+     * Returns the task's creation date.
+     */
+    public String getCreationDate() {
+        return mCreationDate;
     }
 
 }

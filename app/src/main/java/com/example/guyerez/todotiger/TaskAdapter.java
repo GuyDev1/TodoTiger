@@ -51,10 +51,17 @@ public class TaskAdapter extends ArrayAdapter<Task> {
 
         // Locate the TextView in the task_item.xml layout with the ID task_title.
         TextView titleTextView = (TextView) listItemView.findViewById(R.id.task_title);
-        // Get the task list's title from the currentTaskList object and set it in the text view
+        // Get the task's title from the currentTask object and set it in the text view
         titleTextView.setText(currentTask.getTitle());
+
+        //Initialize the check box and check it if the task was completed.
         CheckBox checkBox = (CheckBox) listItemView.findViewById(R.id.check_box);
         checkBox.setChecked(currentTask.getCompleted());
+
+        //Initialize the creation date TextView in the task_item.xml layout with the ID creation_date
+        TextView creationDateTextView = (TextView) listItemView.findViewById(R.id.creation_date);
+        //Get the task's creation date from the currentTask object and set it in the text view
+        creationDateTextView.setText(currentTask.getCreationDate());
 
         // Initialize Firebase DB
         mFirebaseDatabase = FirebaseDatabase.getInstance();

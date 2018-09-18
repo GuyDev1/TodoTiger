@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private TaskListAdapter mTaskListAdapter;
     //TextView that is displayed when the list is empty//
     private TextView mEmptyStateTextView;
-    //TextView that is displayed when the list is empty//
+    //The loading indicator //
     private View loadingIndicator;
 
 
