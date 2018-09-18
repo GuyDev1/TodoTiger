@@ -109,6 +109,9 @@ public class TaskActivity extends AppCompatActivity {
                 Task task = new Task(mTaskEditText.getText().toString(),false,taskId,creationDate);
                 mTaskDatabaseReference.child(taskId).setValue(task);
 
+                //add that task to the list's task count
+                mTaskNumDatabaseReference.child("taskNum").setValue(taskCount+1);
+
 
 
                 // Clear input box
@@ -188,6 +191,8 @@ public class TaskActivity extends AppCompatActivity {
                                         String taskId = mTaskDatabaseReference.push().getKey();
                                         Task task = new Task(userInput.getText().toString(),false,taskId,creationDate);
                                         mTaskDatabaseReference.child(taskId).setValue(task);
+                                        //add that task to the list's task count
+                                        mTaskNumDatabaseReference.child("taskNum").setValue(taskCount+1);
 
 
 
@@ -250,8 +255,6 @@ public class TaskActivity extends AppCompatActivity {
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                     Task task = dataSnapshot.getValue(Task.class);
                     mTaskAdapter.add(task);
-                    //add that task to the list's task count
-                    mTaskNumDatabaseReference.child("taskNum").setValue(taskCount+1);
                 }
                 public void onChildChanged(DataSnapshot dataSnapshot, String s) {}
                 public void onChildRemoved(DataSnapshot dataSnapshot) {

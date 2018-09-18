@@ -50,9 +50,11 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         final Task currentTask = getItem(position);
 
         // Locate the TextView in the task_item.xml layout with the ID task_title.
-        TextView titleTextView = (TextView) listItemView.findViewById(R.id.task_title);
+        final TextView titleTextView = (TextView) listItemView.findViewById(R.id.task_title);
         // Get the task's title from the currentTask object and set it in the text view
         titleTextView.setText(currentTask.getTitle());
+        //If the task is completed - title Strikethrough
+        titleTextView.setBackgroundResource(strikeCompleted(currentTask.getCompleted()));
 
         //Initialize the check box and check it if the task was completed.
         CheckBox checkBox = (CheckBox) listItemView.findViewById(R.id.check_box);
@@ -75,17 +77,26 @@ public class TaskAdapter extends ArrayAdapter<Task> {
             @Override
             public void onCheckedChanged(CompoundButton buttonView,boolean isChecked) {
                 if(isChecked){
+                    titleTextView.setBackgroundResource(R.drawable.strike_through);
                     mTaskDatabaseReference.child("completed").setValue(true);
                     }
                     else{
+                    titleTextView.setBackgroundResource(0);
                     mTaskDatabaseReference.child("completed").setValue(false);
-                }
-
                     }
-        }
+            }
+            }
         );
 
         // Return the whole list item layout (containing 1 text view and 1 checkbox) so that it can be shown in the ListView.
         return listItemView;
+    }
+    private int strikeCompleted(boolean completed){
+        if (completed){
+            return R.drawable.strike_through;
+        }
+        else{
+            return 0;
+        }
     }
 }
