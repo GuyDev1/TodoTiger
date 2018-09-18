@@ -9,6 +9,7 @@
     tools:context=".TaskActivity">
 
     <ListView
+        android:longClickable="true"
         android:id="@+id/task_list_view"
         android:layout_width="0dp"
         android:layout_height="0dp"

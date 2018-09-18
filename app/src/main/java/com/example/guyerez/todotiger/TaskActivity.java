@@ -11,11 +11,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -106,8 +109,7 @@ public class TaskActivity extends AppCompatActivity {
                 Task task = new Task(mTaskEditText.getText().toString(),false,taskId,creationDate);
                 mTaskDatabaseReference.child(taskId).setValue(task);
 
-                //Count that task in the list's task count
-                mTaskNumDatabaseReference.child("taskNum").setValue(taskCount+1);
+
 
                 // Clear input box
                 mTaskEditText.setText("");
@@ -135,6 +137,12 @@ public class TaskActivity extends AppCompatActivity {
         // Make the {@link ListView} use the {@link TaskAdapter} defined above, so that the
         // {@link ListView} will display list items for each {@link Task} in the list.
         listView.setAdapter(mTaskAdapter);
+
+        //Set context menu for ListView
+        listView.setLongClickable(true);
+        registerForContextMenu(listView);
+
+
 
         //Get reference for the task list for the logged in user and attach the database listener
         mTaskDatabaseReference=mFirebaseDatabase.getReference().child("users")
@@ -181,8 +189,7 @@ public class TaskActivity extends AppCompatActivity {
                                         Task task = new Task(userInput.getText().toString(),false,taskId,creationDate);
                                         mTaskDatabaseReference.child(taskId).setValue(task);
 
-                                        //Count that task in the list's task count
-                                        mTaskNumDatabaseReference.child("taskNum").setValue(taskCount+1);
+
 
 
                                     }
@@ -243,9 +250,13 @@ public class TaskActivity extends AppCompatActivity {
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                     Task task = dataSnapshot.getValue(Task.class);
                     mTaskAdapter.add(task);
+                    //add that task to the list's task count
+                    mTaskNumDatabaseReference.child("taskNum").setValue(taskCount+1);
                 }
                 public void onChildChanged(DataSnapshot dataSnapshot, String s) {}
-                public void onChildRemoved(DataSnapshot dataSnapshot) {}
+                public void onChildRemoved(DataSnapshot dataSnapshot) {
+                    mTaskNumDatabaseReference.child("taskNum").setValue(taskCount-1);
+                }
                 public void onChildMoved(DataSnapshot dataSnapshot, String s) {}
                 public void onCancelled(DatabaseError databaseError) {}
             };
@@ -259,6 +270,37 @@ public class TaskActivity extends AppCompatActivity {
             mTaskDatabaseReference.removeEventListener(mChildEventListener);
             mChildEventListener = null;
         }
+    }
+
+    /**
+     * MENU
+     */
+
+    @Override
+    public void onCreateContextMenu(ContextMenu menu,View v, ContextMenu.ContextMenuInfo menuInfo){
+        if (v.getId() == R.id.task_list_view){
+            AdapterView.AdapterContextMenuInfo info =(AdapterView.AdapterContextMenuInfo)menuInfo;
+            menu.add(0,0,0,"Delete");
+        }
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem menuItem){
+        AdapterView.AdapterContextMenuInfo info=(AdapterView.AdapterContextMenuInfo)menuItem.getMenuInfo();
+        Task taskClicked=mTaskAdapter.getItem(info.position);
+        Log.d("check","" +taskClicked.getTitle());
+        switch (menuItem.getItemId()) {
+            case 0:
+                mTaskAdapter.remove(taskClicked);
+                mTaskDatabaseReference.child(taskClicked.getId()).removeValue();
+                Toast.makeText(this, "Task deleted!", Toast.LENGTH_LONG).show();
+                break;
+
+            default:
+                break;
+
+        }
+        return true;
     }
 
 
