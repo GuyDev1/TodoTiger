@@ -294,8 +294,8 @@ public class TaskActivity extends AppCompatActivity {
         Log.d("check","" +taskClicked.getTitle());
         switch (menuItem.getItemId()) {
             case 0:
-                mTaskAdapter.remove(taskClicked);
                 mTaskDatabaseReference.child(taskClicked.getId()).removeValue();
+                mTaskAdapter.remove(taskClicked);
                 Toast.makeText(this, "Task deleted!", Toast.LENGTH_LONG).show();
                 break;
 
