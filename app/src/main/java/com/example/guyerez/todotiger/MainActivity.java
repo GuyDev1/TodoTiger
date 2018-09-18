@@ -41,8 +41,11 @@ public class MainActivity extends AppCompatActivity {
     public static String currentTaskListId;
     public static String currentUserId;
     private TaskListAdapter mTaskListAdapter;
-    /** TextView that is displayed when the list is empty */
+    //TextView that is displayed when the list is empty//
     private TextView mEmptyStateTextView;
+    //TextView that is displayed when the list is empty//
+    private View loadingIndicator;
+
 
     // Firebase instance variables
 
@@ -102,8 +105,14 @@ public class MainActivity extends AppCompatActivity {
 
         // Locate the {@link ListView} object in the view hierarchy of the {@link Activity}.
         ListView listView = (ListView) findViewById(R.id.task_list_view);
+
+        //Set the empty view
         mEmptyStateTextView = (TextView) findViewById(R.id.empty_view);
         listView.setEmptyView(mEmptyStateTextView);
+
+        //Initialize the loading indicator
+        loadingIndicator = findViewById(R.id.loading_indicator);
+        loadingIndicator.setVisibility(View.INVISIBLE);
 
         // Make the {@link ListView} use the {@link TaskListAdapter} defined above, so that the
         // {@link ListView} will display list items for each {@link TaskList} in the list.
@@ -232,10 +241,10 @@ public class MainActivity extends AppCompatActivity {
 
         //Get reference for the task list for the logged in user and attach the database listener
         mTaskListDatabaseReference=mFirebaseDatabase.getReference().child("users").child(userId);
-        View loadingIndicator = findViewById(R.id.loading_indicator);
+        loadingIndicator.setVisibility(View.VISIBLE);
         attachDatabaseReadListener();
-        loadingIndicator.setVisibility(View.GONE);
         mEmptyStateTextView.setText("No task lists, add a new one!");
+        loadingIndicator.setVisibility(View.GONE);
 
 
     }

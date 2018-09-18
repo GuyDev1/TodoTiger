@@ -8,12 +8,15 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -41,8 +44,13 @@ public class TaskActivity extends AppCompatActivity {
     final Context context = this;
     private TaskAdapter mTaskAdapter;
     private int taskCount;
-    /** TextView that is displayed when the list is empty */
+    // TextView that is displayed when the list is empty //
     private TextView mEmptyStateTextView;
+    //TextView that is displayed when the list is empty//
+    private View loadingIndicator;
+    //Edit text and button for creating new tasks quickly
+    private EditText mTaskEditText;
+    private Button mTaskCreateButton;
 
     // Firebase instance variables
     private FirebaseDatabase mFirebaseDatabase;
@@ -59,6 +67,49 @@ public class TaskActivity extends AppCompatActivity {
         // Initialize Firebase components
         mFirebaseDatabase = FirebaseDatabase.getInstance();
 
+        // Initialize references to views
+        mTaskEditText = (EditText) findViewById(R.id.task_edit_text);
+        mTaskCreateButton = (Button) findViewById(R.id.create_task_button);
+
+        // Enable Send button when there's text to send
+        mTaskEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                if (charSequence.toString().trim().length() > 0) {
+                    mTaskCreateButton.setEnabled(true);
+                } else {
+                    mTaskCreateButton.setEnabled(false);
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+            }
+        });
+
+        // Create button creates a new task and clears the EditText
+        mTaskCreateButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Get task title from user and create a new task
+                //Also fetch the FireBase ID and connect it to the new task.
+                String taskId = mTaskDatabaseReference.push().getKey();
+                Task task = new Task(mTaskEditText.getText().toString(),false,taskId);
+                mTaskDatabaseReference.child(taskId).setValue(task);
+
+                //Count that task in the list's task count
+                mTaskNumDatabaseReference.child("taskNum").setValue(taskCount+1);
+
+                // Clear input box
+                mTaskEditText.setText("");
+            }
+        });
+
+
         //Initialize task Array, ListView and Adapter.
         final ArrayList<Task> tasks = new ArrayList<Task>();
 
@@ -67,8 +118,14 @@ public class TaskActivity extends AppCompatActivity {
 
         // Locate the {@link ListView} object in the view hierarchy of the {@link Activity}.
         ListView listView = (ListView) findViewById(R.id.task_list_view);
+
+        //Set the empty view
         mEmptyStateTextView = (TextView) findViewById(R.id.empty_view);
         listView.setEmptyView(mEmptyStateTextView);
+
+        //Initialize the loading indicator
+        loadingIndicator = findViewById(R.id.loading_indicator);
+        loadingIndicator.setVisibility(View.INVISIBLE);
 
         // Make the {@link ListView} use the {@link TaskAdapter} defined above, so that the
         // {@link ListView} will display list items for each {@link Task} in the list.
@@ -81,9 +138,7 @@ public class TaskActivity extends AppCompatActivity {
         mTaskNumDatabaseReference=mFirebaseDatabase.getReference().child("users")
                 .child(MainActivity.getCurrentUserId())
                 .child(MainActivity.getCurrentTaskListId());
-        View loadingIndicator = findViewById(R.id.loading_indicator);
-        loadingIndicator.setVisibility(View.GONE);
-        mEmptyStateTextView.setText("No tasks, add a new one!");
+
 
         //Set and create the FAB and it's action listener
         FloatingActionButton fab = findViewById(R.id.fab);
@@ -158,7 +213,11 @@ public class TaskActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        loadingIndicator.setVisibility(View.VISIBLE);
         attachDatabaseReadListener();
+        mEmptyStateTextView.setText("No tasks, add a new one!");
+        loadingIndicator.setVisibility(View.GONE);
+
     }
     @Override
     protected void onPause() {
