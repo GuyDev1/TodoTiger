@@ -68,26 +68,26 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         // Initialize Firebase DB
         mFirebaseDatabase = FirebaseDatabase.getInstance();
         //Get the task DB reference to edit task completion status
-        mTaskDatabaseReference=mFirebaseDatabase.getReference()
-                .child("users").child(MainActivity.getCurrentUserId())
-                .child(MainActivity.getCurrentTaskListId()).child("tasks").child(currentTask.getId());
+
         // Find the CheckBox in the task_item.xml layout with the ID check_box.
 
         checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView,boolean isChecked) {
-                if(isChecked){
-                    titleTextView.setBackgroundResource(R.drawable.strike_through);
-                    mTaskDatabaseReference.child("completed").setValue(true);
+                mTaskDatabaseReference=mFirebaseDatabase.getReference()
+                        .child("users").child(MainActivity.getCurrentUserId())
+                        .child(MainActivity.getCurrentTaskListId()).child("tasks").child(currentTask.getId());
+                    if (isChecked) {
+                        titleTextView.setBackgroundResource(R.drawable.strike_through);
+                        mTaskDatabaseReference.child("completed").setValue(true);
+                    } else {
+                        titleTextView.setBackgroundResource(0);
+                        mTaskDatabaseReference.child("completed").setValue(false);
                     }
-                    else{
-                    titleTextView.setBackgroundResource(0);
-                    mTaskDatabaseReference.child("completed").setValue(false);
-                    }
+
             }
             }
         );
-
         // Return the whole list item layout (containing 1 text view and 1 checkbox) so that it can be shown in the ListView.
         return listItemView;
     }
