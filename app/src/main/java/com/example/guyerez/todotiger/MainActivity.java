@@ -9,6 +9,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -185,6 +186,9 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        listView.setLongClickable(true);
+        registerForContextMenu(listView);
+
     }
 
     @Override
@@ -283,6 +287,37 @@ public class MainActivity extends AppCompatActivity {
     }
     public static String getCurrentUserId() {
         return currentUserId;
+    }
+
+    /**
+     * MENU
+     */
+
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo){
+        if (v.getId() == R.id.task_list_view){
+            AdapterView.AdapterContextMenuInfo info =(AdapterView.AdapterContextMenuInfo)menuInfo;
+            menu.add(0,0,0,"Delete");
+        }
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem menuItem){
+        AdapterView.AdapterContextMenuInfo info=(AdapterView.AdapterContextMenuInfo)menuItem.getMenuInfo();
+        TaskList taskListClicked=mTaskListAdapter.getItem(info.position);
+        Log.d("check","" +taskListClicked.getTitle());
+        switch (menuItem.getItemId()) {
+            case 0:
+                mTaskListDatabaseReference.child(taskListClicked.getId()).removeValue();
+                mTaskListAdapter.remove(taskListClicked);
+                Toast.makeText(this, "Task List deleted!", Toast.LENGTH_LONG).show();
+                break;
+
+            default:
+                break;
+
+        }
+        return true;
     }
 
 

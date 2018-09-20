@@ -52,7 +52,7 @@
             android:text="Create" />
 
     </LinearLayout>
-    
+
 
     <!-- Empty view is only visible when the list has no items. -->
     <TextView
