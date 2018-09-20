@@ -58,6 +58,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
 
         //Initialize the check box and check it if the task was completed.
         CheckBox checkBox = (CheckBox) listItemView.findViewById(R.id.check_box);
+        checkBox.setOnCheckedChangeListener(null);
         checkBox.setChecked(currentTask.getCompleted());
 
         //Initialize the creation date TextView in the task_item.xml layout with the ID creation_date
@@ -78,9 +79,11 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                         .child("users").child(MainActivity.getCurrentUserId())
                         .child(MainActivity.getCurrentTaskListId()).child("tasks").child(currentTask.getId());
                     if (isChecked) {
+                        Log.d("heyy","shouldn't be checked.");
                         titleTextView.setBackgroundResource(R.drawable.strike_through);
                         mTaskDatabaseReference.child("completed").setValue(true);
                     } else {
+                        Log.d("heyy","shouldn't be unchecked.");
                         titleTextView.setBackgroundResource(0);
                         mTaskDatabaseReference.child("completed").setValue(false);
                     }
