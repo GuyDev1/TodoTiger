@@ -1,10 +1,13 @@
 package com.example.guyerez.todotiger;
 
 import android.app.AlertDialog;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
@@ -143,6 +146,30 @@ public class TaskActivity extends AppCompatActivity {
         // {@link ListView} will display list items for each {@link Task} in the list.
         listView.setAdapter(mTaskAdapter);
 
+        //Set a regular click - opening the TaskInfoFragment
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+                // Find the current task list that was clicked on
+                Log.d("clicked here bro","");
+                Task currentTask = mTaskAdapter.getItem(position);
+
+                //Open the TaskInfoFragment for this task
+                TaskInfoFragment taskInfo = new TaskInfoFragment();
+                taskInfo.setCurrentTask(currentTask);
+                android.support.v4.app.FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+                // Replace whatever is in the fragment_container view with this fragment,
+                // and add the transaction to the back stack
+                transaction.replace(R.id.frag_container, taskInfo);
+                transaction.addToBackStack(null);
+
+                // Commit the transaction
+                transaction.commit();
+
+
+            }
+        });
+
         //Set context menu for ListView
         listView.setLongClickable(true);
         registerForContextMenu(listView);
@@ -200,7 +227,10 @@ public class TaskActivity extends AppCompatActivity {
                     Task task = dataSnapshot.getValue(Task.class);
                     mTaskAdapter.add(task);
                 }
-                public void onChildChanged(DataSnapshot dataSnapshot, String s) {}
+                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                    //Task task = dataSnapshot.getValue(Task.class);
+                    //mTaskAdapter.add(task);
+                }
                 public void onChildRemoved(DataSnapshot dataSnapshot) {
                     mTaskNumDatabaseReference.child("taskNum").setValue(taskCount-1);
                 }
@@ -228,6 +258,7 @@ public class TaskActivity extends AppCompatActivity {
         if (v.getId() == R.id.task_list_view){
             AdapterView.AdapterContextMenuInfo info =(AdapterView.AdapterContextMenuInfo)menuInfo;
             menu.add(0,0,0,"Delete");
+            menu.add(0,1,1,"info");
         }
     }
 
@@ -241,6 +272,20 @@ public class TaskActivity extends AppCompatActivity {
                 mTaskDatabaseReference.child(taskClicked.getId()).removeValue();
                 mTaskAdapter.remove(taskClicked);
                 Toast.makeText(this, "Task deleted!", Toast.LENGTH_LONG).show();
+                break;
+
+            case 1:
+                //Open the TaskInfoFragment for this task
+                TaskInfoFragment taskInfo = new TaskInfoFragment();
+                taskInfo.setCurrentTask(taskClicked);
+                android.support.v4.app.FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+                // Replace whatever is in the fragment_container view with this fragment,
+                // and add the transaction to the back stack
+                transaction.replace(R.id.frag_container, taskInfo);
+                transaction.addToBackStack(null);
+
+                // Commit the transaction
+                transaction.commit();
                 break;
 
             default:
@@ -257,8 +302,17 @@ public class TaskActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             // Respond to the action bar's Up/Home button
             case android.R.id.home:
-                NavUtils.navigateUpFromSameTask(this);
+                //Check if the call came from the TaskInfoFragment or the activity
+                Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.frag_container);
+                if(currentFragment!=null && currentFragment.isVisible()){
+                    this.onBackPressed();
+                }
+                else{
+                    NavUtils.navigateUpFromSameTask(this);
+
+                }
                 return true;
+
         }
         return super.onOptionsItemSelected(item);
     }
