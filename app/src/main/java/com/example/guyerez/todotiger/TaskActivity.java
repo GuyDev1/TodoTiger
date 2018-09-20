@@ -5,8 +5,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
@@ -159,64 +157,6 @@ public class TaskActivity extends AppCompatActivity {
                 .child(MainActivity.getCurrentUserId())
                 .child(MainActivity.getCurrentTaskListId());
 
-
-        //Set and create the FAB and it's action listener
-        FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // Get add_list.xml view
-                LayoutInflater li = LayoutInflater.from(context);
-                View addTaskView = li.inflate(R.layout.add_task, null);
-
-                //Create the prompt to enable the user to create a new task list
-                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(
-                        context);
-
-                // Set add_task.xml as the layout for alertdialog builder
-                alertDialogBuilder.setView(addTaskView);
-
-                //Set the user input box
-                final EditText userInput = (EditText) addTaskView
-                        .findViewById(R.id.edit_task_name);
-
-                // Set dialog message
-                alertDialogBuilder
-                        .setCancelable(false)
-                        .setPositiveButton("Create",
-                                new DialogInterface.OnClickListener() {
-                                    public void onClick(DialogInterface dialog,int id) {
-
-                                        // Get task title from user and create a new task
-                                        //Also fetch the FireBase ID and connect it to the new task.
-                                        //And finally get the task's creation date
-                                        String creationDate = "Created: " + new SimpleDateFormat
-                                                ("yyyy-MM-dd", Locale.getDefault()).format(new Date());
-                                        String taskId = mTaskDatabaseReference.push().getKey();
-                                        Task task = new Task(userInput.getText().toString(),false,taskId,creationDate);
-                                        mTaskDatabaseReference.child(taskId).setValue(task);
-                                        //add that task to the list's task count
-                                        mTaskNumDatabaseReference.child("taskNum").setValue(taskCount+1);
-
-
-
-
-                                    }
-                                })
-                        .setNegativeButton("Cancel",
-                                new DialogInterface.OnClickListener() {
-                                    public void onClick(DialogInterface dialog,int id) {
-                                        dialog.cancel();
-                                    }
-                                });
-
-                // Create the dialog
-                AlertDialog alertDialog = alertDialogBuilder.create();
-
-                // Show the dialog
-                alertDialog.show();
-            }
-        });
 
         //add listener to get the current task count in this specific task list
         mTaskNumDatabaseReference.addValueEventListener(new ValueEventListener() {

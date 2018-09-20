@@ -79,11 +79,9 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                         .child("users").child(MainActivity.getCurrentUserId())
                         .child(MainActivity.getCurrentTaskListId()).child("tasks").child(currentTask.getId());
                     if (isChecked) {
-                        Log.d("heyy","shouldn't be checked.");
                         titleTextView.setBackgroundResource(R.drawable.strike_through);
                         mTaskDatabaseReference.child("completed").setValue(true);
                     } else {
-                        Log.d("heyy","shouldn't be unchecked.");
                         titleTextView.setBackgroundResource(0);
                         mTaskDatabaseReference.child("completed").setValue(false);
                     }
