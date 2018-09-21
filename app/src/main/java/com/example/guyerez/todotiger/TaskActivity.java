@@ -82,7 +82,7 @@ public class TaskActivity extends AppCompatActivity {
         mTaskEditText = (EditText) findViewById(R.id.task_edit_text);
         mTaskCreateButton = (Button) findViewById(R.id.create_task_button);
 
-        // Enable Send button when there's text to send
+        // Enable create button when input is not empty
         mTaskEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -190,8 +190,11 @@ public class TaskActivity extends AppCompatActivity {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 TaskList taskList = dataSnapshot.getValue(TaskList.class);
-                taskCount=taskList.getTaskNum();
-                Log.d("post count: ", "" + taskCount);
+                if(taskList!=null){
+                    taskCount=taskList.getTaskNum();
+                    Log.d("post count: ", "" + taskCount);
+                }
+
             }
 
             @Override

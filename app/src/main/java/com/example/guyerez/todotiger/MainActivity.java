@@ -8,6 +8,8 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
@@ -139,6 +141,8 @@ public class MainActivity extends AppCompatActivity {
                 final EditText userInput = (EditText) addTaskListView
                         .findViewById(R.id.edit_list_name);
 
+
+
                 // Set dialog message
                 alertDialogBuilder
                         .setCancelable(false)
@@ -160,10 +164,31 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                 // Create the dialog
-                AlertDialog alertDialog = alertDialogBuilder.create();
+                final AlertDialog alertDialog = alertDialogBuilder.create();
+
+                // Enable create button when input is not empty
+                userInput.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                    }
+
+                    @Override
+                    public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                        if (charSequence.toString().trim().length() > 0) {
+                            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                        } else {
+                            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+                        }
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable editable) {
+                    }
+                });
 
                 // Show the dialog
                 alertDialog.show();
+                alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
             }
         });
         // Set an item click listener on the ListView, which creates an intent to open
