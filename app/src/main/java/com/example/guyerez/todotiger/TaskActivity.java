@@ -109,9 +109,9 @@ public class TaskActivity extends AppCompatActivity {
                 // Get task title from user and create a new task
                 //Also fetch the FireBase ID and connect it to the new task.
                 //And finally get the task's creation date
-                String creationDate ="Created: " + new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+                String creationDate ="Created: " + new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
                 String taskId = mTaskDatabaseReference.push().getKey();
-                Task task = new Task(mTaskEditText.getText().toString(),false,taskId,creationDate);
+                Task task = new Task(mTaskEditText.getText().toString(),false,taskId,creationDate,null,null);
                 mTaskDatabaseReference.child(taskId).setValue(task);
 
                 //add that task to the list's task count

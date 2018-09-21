@@ -16,6 +16,12 @@ public class Task {
     /** The task's creation date */
     private String mCreationDate;
 
+    /** The task's due date */
+    private String mDueDate;
+
+    /** The task's notes */
+    private String mNotes;
+
 
 
     public Task() {
@@ -28,13 +34,17 @@ public class Task {
      * @param completed indicates whether the task is completed or not
      * @param id is the task's ID from FireBase
      * @param creationDate is the task's creation date
+     * @param dueDate is the task's due date
+     * @param notes is the task related notes
      */
 
-    public Task(String title, boolean completed, String id, String creationDate) {
+    public Task(String title, boolean completed, String id, String creationDate,String dueDate,String notes) {
         mTitle = title;
         mCompleted=completed;
         mId=id;
         mCreationDate=creationDate;
+        mDueDate=dueDate;
+        mNotes=notes;
     }
 
     /**
@@ -65,6 +75,20 @@ public class Task {
         mCreationDate=creationDate;
     }
 
+    /**
+     * Sets the task's due date.
+     */
+    public void setDueDate(String dueDate) {
+        mDueDate=dueDate;
+    }
+
+    /**
+     * Sets the task's notes.
+     */
+    public void setNotes(String notes) {
+        mNotes=notes;
+    }
+
 
     /**
      * Returns the task's title.
@@ -92,6 +116,20 @@ public class Task {
      */
     public String getCreationDate() {
         return mCreationDate;
+    }
+
+    /**
+     * Returns the task's due date.
+     */
+    public String getDueDate() {
+        return mDueDate;
+    }
+
+    /**
+     * Returns the task's notes.
+     */
+    public String getNotes() {
+        return mNotes;
     }
 
 }
