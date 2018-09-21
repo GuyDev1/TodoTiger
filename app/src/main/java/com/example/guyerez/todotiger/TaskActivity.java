@@ -111,7 +111,7 @@ public class TaskActivity extends AppCompatActivity {
                 //And finally get the task's creation date
                 String creationDate ="Created: " + new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
                 String taskId = mTaskDatabaseReference.push().getKey();
-                Task task = new Task(mTaskEditText.getText().toString(),false,taskId,creationDate,null,null);
+                Task task = new Task(mTaskEditText.getText().toString(),false,taskId,creationDate,"",null);
                 mTaskDatabaseReference.child(taskId).setValue(task);
 
                 //add that task to the list's task count

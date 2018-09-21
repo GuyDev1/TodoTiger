@@ -66,6 +66,11 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         //Get the task's creation date from the currentTask object and set it in the text view
         creationDateTextView.setText(currentTask.getCreationDate());
 
+        //Initialize the creation date TextView in the task_item.xml layout with the ID creation_date
+        TextView dueDateTextView = (TextView) listItemView.findViewById(R.id.due_date);
+        //Get the task's creation date from the currentTask object and set it in the text view
+        dueDateTextView.setText(currentTask.getDueDate());
+
         // Initialize Firebase DB
         mFirebaseDatabase = FirebaseDatabase.getInstance();
         //Get the task DB reference to edit task completion status

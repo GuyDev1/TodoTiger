@@ -89,7 +89,7 @@ public class TaskInfoFragment extends Fragment {
         //Initialize DatePicker related variables
         myCalendar = Calendar.getInstance();
         dueDate= (EditText) rootView.findViewById(R.id.date_picker);
-        dueDate.setText(currentTask.getDueDate());
+        dueDate.setText("Due: " +currentTask.getDueDate());
         date = new DatePickerDialog.OnDateSetListener() {
 
             //Set the DatePicker
@@ -127,7 +127,7 @@ public class TaskInfoFragment extends Fragment {
         String myFormat = "dd/MM/yyyy";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
 
-        dueDate.setText(sdf.format(myCalendar.getTime()));
+        dueDate.setText("Due: " + sdf.format(myCalendar.getTime()));
     }
 
     public void setCurrentTask(Task task) {
