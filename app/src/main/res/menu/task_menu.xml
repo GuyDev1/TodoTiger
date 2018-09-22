@@ -19,6 +19,26 @@
         android:title="Show completed tasks"
         app:showAsAction="never"/>
 
+    <item
+        android:id="@+id/show_due"
+        android:title="Show tasks due"
+        app:showAsAction="never">
+        <menu>
+            <item
+            android:id="@+id/due_today"
+            android:title="Today"
+            app:showAsAction="never"/>
+            <item
+                android:id="@+id/due_week"
+                android:title="This week"
+                app:showAsAction="never"/>
+            <item
+                android:id="@+id/due_month"
+                android:title="This month"
+                app:showAsAction="never"/>
+        </menu>
+    </item>
+
 
 
 </menu>

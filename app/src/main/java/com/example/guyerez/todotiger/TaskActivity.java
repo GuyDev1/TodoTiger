@@ -1,5 +1,6 @@
 package com.example.guyerez.todotiger;
 
+import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
@@ -7,7 +8,9 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
@@ -43,9 +46,11 @@ import com.google.firebase.database.MutableData;
 import com.google.firebase.database.Transaction;
 import com.google.firebase.database.ValueEventListener;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -66,6 +71,10 @@ public class TaskActivity extends AppCompatActivity {
     public static final int SHOW_ALL_TASKS = 0;
     public static final int SHOW_OPEN_TASKS = 1;
     public static final int SHOW_COMPLETED_TASKS = 2;
+    public static final int TASKS_DUE_TODAY = 3;
+    public static final int TASKS_DUE_WEEK = 4;
+    public static final int TASKS_DUE_MONTH = 5;
+
 
 
     // Firebase instance variables
@@ -215,6 +224,8 @@ public class TaskActivity extends AppCompatActivity {
     private void attachDatabaseReadListener() {
         if (mChildEventListener == null) {
             mChildEventListener = new ChildEventListener() {
+                @TargetApi(Build.VERSION_CODES.N)
+                @RequiresApi(api = Build.VERSION_CODES.N)
                 @Override
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                     Task task = dataSnapshot.getValue(Task.class);
@@ -233,6 +244,39 @@ public class TaskActivity extends AppCompatActivity {
                                 mTaskAdapter.add(task);
                             }
                             break;
+
+                        case TASKS_DUE_TODAY:
+                            try {
+                                if(!task.getCompleted() && checkDueDate(TASKS_DUE_TODAY,task.getDueDate())){
+                                    mTaskAdapter.add(task);
+
+                                }
+                            } catch (ParseException e) {
+                                e.printStackTrace();
+                            }
+                            break;
+                        case TASKS_DUE_WEEK:
+                            try {
+                                if(!task.getCompleted() && checkDueDate(TASKS_DUE_WEEK,task.getDueDate())){
+                                    mTaskAdapter.add(task);
+
+                                }
+                            } catch (ParseException e) {
+                                e.printStackTrace();
+                            }
+                            break;
+
+                        case TASKS_DUE_MONTH:
+                            try {
+                                if(!task.getCompleted() && checkDueDate(TASKS_DUE_MONTH,task.getDueDate())){
+                                    mTaskAdapter.add(task);
+
+                                }
+                            } catch (ParseException e) {
+                                e.printStackTrace();
+                            }
+                            break;
+
 
 
                     }
@@ -335,6 +379,23 @@ public class TaskActivity extends AppCompatActivity {
                 recreate();
                 return true;
 
+            case R.id.due_today:
+                setTasksToShow(TASKS_DUE_TODAY);
+                recreate();
+                return true;
+
+            case R.id.due_week:
+                setTasksToShow(TASKS_DUE_WEEK);
+                recreate();
+                return true;
+
+            case R.id.due_month:
+                setTasksToShow(TASKS_DUE_MONTH);
+                recreate();
+                return true;
+
+
+
 
         }
         return super.onOptionsItemSelected(item);
@@ -355,18 +416,56 @@ public class TaskActivity extends AppCompatActivity {
     }
 
     private void setTasksToShow(int tasksToShow){
+        //Get's which tasks to show - and sets the preferences accordingly
         SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putInt("tasksToShow",tasksToShow);
         editor.commit();
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private boolean checkDueDate(int dueWhen, String dueDate) throws ParseException {
+        //Get's duedate filter (today/week/month) and check if current task's due date fits.
+        Calendar currentCalendar = Calendar.getInstance();
+        Calendar dueCalendar = Calendar.getInstance();
+        String myFormat = "dd/MM/yyyy";
+        SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
+        String currentDate=sdf.format(currentCalendar.getTime());
+        Date taskDueDate=sdf.parse(dueDate.substring(5));
+        currentCalendar.setTime(currentCalendar.getTime());
+        dueCalendar.setTime(taskDueDate);
+        int currentYear=currentCalendar.getWeekYear();
+        int currentWeek=currentCalendar.get(Calendar.WEEK_OF_YEAR);
+        int currentMonth=currentCalendar.get(Calendar.MONTH);
+        int dueYear=dueCalendar.getWeekYear();
+        int dueWeek=dueCalendar.get(Calendar.WEEK_OF_YEAR);
+        int dueMonth=dueCalendar.get(Calendar.MONTH);
+
+        switch (dueWhen){
+            case TASKS_DUE_TODAY:
+                if (currentDate.equals(dueDate.substring(5))){
+                    return true;
+                }
+                break;
+            case TASKS_DUE_WEEK:
+                if(currentYear==dueYear && currentWeek==dueWeek){
+                    return true;
+                }
+                break;
+            case TASKS_DUE_MONTH:
+                if(currentMonth==dueMonth){
+                    return true;
+                }
+                break;
+
+
+
+                }
+                return false;
+        }
+
+    }
 
 
 
 
-
-
-
-
-}
