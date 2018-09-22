@@ -1,10 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu
-    xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
 
-    <item android:id="@+id/delete"
-        android:icon="@android:drawable/ic_menu_delete"
-        android:title="Delete task" />
+
+    <item
+        android:id="@+id/show_all"
+        android:title="Show all tasks"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/show_open"
+        android:title="Show open tasks"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/show_completed"
+        android:title="Show completed tasks"
+        app:showAsAction="never"/>
+
+
 
 </menu>

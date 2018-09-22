@@ -6,6 +6,7 @@ import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.NavUtils;
@@ -59,6 +60,13 @@ public class TaskActivity extends AppCompatActivity {
     //Edit text and button for creating new tasks quickly
     private EditText mTaskEditText;
     private Button mTaskCreateButton;
+    //Show completed tasks boolean
+    private int tasksToShow;
+    //Variables indicating which tasks to show in the ListView
+    public static final int SHOW_ALL_TASKS = 0;
+    public static final int SHOW_OPEN_TASKS = 1;
+    public static final int SHOW_COMPLETED_TASKS = 2;
+
 
     // Firebase instance variables
     private FirebaseDatabase mFirebaseDatabase;
@@ -71,6 +79,10 @@ public class TaskActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         // Set the content of the activity to use the activity_main.xml layout file - the task lists
         setContentView(R.layout.task_activity);
+
+        //Get task preferences - which tasks to show - show all tasks by default
+        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+        tasksToShow=sharedPref.getInt("tasksToShow",SHOW_ALL_TASKS);
 
         //Set up to allow Up navigation to parent activity
         this.getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -206,11 +218,27 @@ public class TaskActivity extends AppCompatActivity {
                 @Override
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                     Task task = dataSnapshot.getValue(Task.class);
-                    mTaskAdapter.add(task);
+                    switch (tasksToShow){
+                        case SHOW_ALL_TASKS:
+                            mTaskAdapter.add(task);
+                            break;
+
+                        case SHOW_OPEN_TASKS:
+                            if(!task.getCompleted()){
+                                mTaskAdapter.add(task);
+                            }
+                            break;
+                        case SHOW_COMPLETED_TASKS:
+                            if(task.getCompleted()){
+                                mTaskAdapter.add(task);
+                            }
+                            break;
+
+
+                    }
+
                 }
-                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-                    //Task task = dataSnapshot.getValue(Task.class);
-                    //mTaskAdapter.add(task);
+                public void onChildChanged(DataSnapshot dataSnapshot, String s) { ;
                 }
                 public void onChildRemoved(DataSnapshot dataSnapshot) {
                     mTaskNumDatabaseReference.child("taskNum").setValue(taskCount-1);
@@ -268,6 +296,13 @@ public class TaskActivity extends AppCompatActivity {
     }
 
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.task_menu,menu);
+        return true;
+    }
+
     //set up the back button - to navigate to the parent activity
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -284,6 +319,22 @@ public class TaskActivity extends AppCompatActivity {
 
                 }
                 return true;
+
+            case R.id.show_all:
+                setTasksToShow(SHOW_ALL_TASKS);
+                recreate();
+                return true;
+
+            case R.id.show_open:
+                setTasksToShow(SHOW_OPEN_TASKS);
+                recreate();
+                return true;
+
+            case R.id.show_completed:
+                setTasksToShow(SHOW_COMPLETED_TASKS);
+                recreate();
+                return true;
+
 
         }
         return super.onOptionsItemSelected(item);
@@ -302,6 +353,19 @@ public class TaskActivity extends AppCompatActivity {
         // Commit the transaction
         transaction.commit();
     }
+
+    private void setTasksToShow(int tasksToShow){
+        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putInt("tasksToShow",tasksToShow);
+        editor.commit();
+    }
+
+
+
+
+
+
 
 
 
