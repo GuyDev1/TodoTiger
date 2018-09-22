@@ -1,5 +1,6 @@
 package com.example.guyerez.todotiger;
 
+import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -8,6 +9,8 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.firebase.database.DatabaseReference;
@@ -26,6 +29,9 @@ public class TaskAdapter extends ArrayAdapter<Task> {
     //Define FireBase instance variables
     private DatabaseReference mTaskDatabaseReference;
     private FirebaseDatabase mFirebaseDatabase;
+
+    //Context to access TaskActivity method
+    private Context mContext;
     /**
      * Create a new {@link TaskAdapter} object.
      *
@@ -36,6 +42,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
 
     public TaskAdapter(Context context, ArrayList<Task> tasks) {
         super(context, 0, tasks);
+        this.mContext=context;
     }
 
     @Override
@@ -46,6 +53,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
             listItemView = LayoutInflater.from(getContext()).inflate(
                     R.layout.task_item, parent, false);
         }
+
         // Get the {@link Task} object located at this position in the list
         final Task currentTask = getItem(position);
 
@@ -57,6 +65,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         titleTextView.setBackgroundResource(strikeCompleted(currentTask.getCompleted()));
 
         //Initialize the check box and check it if the task was completed.
+
         CheckBox checkBox = (CheckBox) listItemView.findViewById(R.id.check_box);
         checkBox.setOnCheckedChangeListener(null);
         checkBox.setChecked(currentTask.getCompleted());
@@ -94,7 +103,19 @@ public class TaskAdapter extends ArrayAdapter<Task> {
             }
             }
         );
-        // Return the whole list item layout (containing 1 text view and 1 checkbox) so that it can be shown in the ListView.
+
+        titleTextView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(mContext instanceof TaskActivity){
+                    //Use the TaskActivity getTaskInfo method to start TaskInfoFragment
+                    ((TaskActivity)mContext).getTaskInfo(currentTask);
+                }
+
+            }
+        });
+
+        // Return the whole list item layout (containing 3 text views and 1 checkbox) so that it can be shown in the ListView.
         return listItemView;
     }
     private int strikeCompleted(boolean completed){

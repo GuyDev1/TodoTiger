@@ -89,7 +89,7 @@ public class TaskInfoFragment extends Fragment {
         //Initialize DatePicker related variables
         myCalendar = Calendar.getInstance();
         dueDate= (EditText) rootView.findViewById(R.id.date_picker);
-        dueDate.setText("Due: " +currentTask.getDueDate());
+        dueDate.setText(currentTask.getDueDate());
         date = new DatePickerDialog.OnDateSetListener() {
 
             //Set the DatePicker

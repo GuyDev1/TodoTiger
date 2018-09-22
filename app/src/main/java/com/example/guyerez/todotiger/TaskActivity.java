@@ -79,6 +79,7 @@ public class TaskActivity extends AppCompatActivity {
         mFirebaseDatabase = FirebaseDatabase.getInstance();
 
         // Initialize references to views
+
         mTaskEditText = (EditText) findViewById(R.id.task_edit_text);
         mTaskCreateButton = (Button) findViewById(R.id.create_task_button);
 
@@ -111,7 +112,7 @@ public class TaskActivity extends AppCompatActivity {
                 //And finally get the task's creation date
                 String creationDate ="Created: " + new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
                 String taskId = mTaskDatabaseReference.push().getKey();
-                Task task = new Task(mTaskEditText.getText().toString(),false,taskId,creationDate,"",null);
+                Task task = new Task(mTaskEditText.getText().toString(),false,taskId,creationDate,"Due: --/--/----",null);
                 mTaskDatabaseReference.child(taskId).setValue(task);
 
                 //add that task to the list's task count
@@ -146,29 +147,6 @@ public class TaskActivity extends AppCompatActivity {
         // {@link ListView} will display list items for each {@link Task} in the list.
         listView.setAdapter(mTaskAdapter);
 
-        //Set a regular click - opening the TaskInfoFragment
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-                // Find the current task list that was clicked on
-                Log.d("clicked here bro","");
-                Task currentTask = mTaskAdapter.getItem(position);
-
-                //Open the TaskInfoFragment for this task
-                TaskInfoFragment taskInfo = new TaskInfoFragment();
-                taskInfo.setCurrentTask(currentTask);
-                android.support.v4.app.FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-                // Replace whatever is in the fragment_container view with this fragment,
-                // and add the transaction to the back stack
-                transaction.replace(R.id.frag_container, taskInfo);
-                transaction.addToBackStack(null);
-
-                // Commit the transaction
-                transaction.commit();
-
-
-            }
-        });
 
         //Set context menu for ListView
         listView.setLongClickable(true);
@@ -279,16 +257,7 @@ public class TaskActivity extends AppCompatActivity {
 
             case 1:
                 //Open the TaskInfoFragment for this task
-                TaskInfoFragment taskInfo = new TaskInfoFragment();
-                taskInfo.setCurrentTask(taskClicked);
-                android.support.v4.app.FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-                // Replace whatever is in the fragment_container view with this fragment,
-                // and add the transaction to the back stack
-                transaction.replace(R.id.frag_container, taskInfo);
-                transaction.addToBackStack(null);
-
-                // Commit the transaction
-                transaction.commit();
+                getTaskInfo(taskClicked);
                 break;
 
             default:
@@ -318,6 +287,20 @@ public class TaskActivity extends AppCompatActivity {
 
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    public void getTaskInfo(Task currentTask){
+        //Open the TaskInfoFragment for this task
+        TaskInfoFragment taskInfo = new TaskInfoFragment();
+        taskInfo.setCurrentTask(currentTask);
+        android.support.v4.app.FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        // Replace whatever is in the fragment_container view with this fragment,
+        // and add the transaction to the back stack
+        transaction.replace(R.id.frag_container, taskInfo);
+        transaction.addToBackStack(null);
+
+        // Commit the transaction
+        transaction.commit();
     }
 
 
