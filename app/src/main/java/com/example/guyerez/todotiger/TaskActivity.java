@@ -74,6 +74,9 @@ public class TaskActivity extends AppCompatActivity {
     public static final int TASKS_DUE_TODAY = 3;
     public static final int TASKS_DUE_WEEK = 4;
     public static final int TASKS_DUE_MONTH = 5;
+    public static final int TASKS_COMPLETED_TODAY = 6;
+    public static final int TASKS_COMPLETED_WEEK = 7;
+    public static final int TASKS_COMPLETED_MONTH = 8;
 
 
 
@@ -276,6 +279,38 @@ public class TaskActivity extends AppCompatActivity {
                                 e.printStackTrace();
                             }
                             break;
+                        case TASKS_COMPLETED_TODAY:
+                            try {
+                                if(task.getCompleted() && checkCompletionDate(TASKS_COMPLETED_TODAY,task.getCompletionDate())){
+                                    mTaskAdapter.add(task);
+
+                                }
+                            } catch (ParseException e) {
+                                e.printStackTrace();
+                            }
+                            break;
+
+                        case TASKS_COMPLETED_WEEK:
+                            try {
+                                if(task.getCompleted() && checkCompletionDate(TASKS_COMPLETED_WEEK,task.getCompletionDate())){
+                                    mTaskAdapter.add(task);
+
+                                }
+                            } catch (ParseException e) {
+                                e.printStackTrace();
+                            }
+                            break;
+
+                        case TASKS_COMPLETED_MONTH:
+                            try {
+                                if(task.getCompleted() && checkCompletionDate(TASKS_COMPLETED_MONTH,task.getCompletionDate())){
+                                    mTaskAdapter.add(task);
+
+                                }
+                            } catch (ParseException e) {
+                                e.printStackTrace();
+                            }
+                            break;
 
 
 
@@ -374,10 +409,6 @@ public class TaskActivity extends AppCompatActivity {
                 recreate();
                 return true;
 
-            case R.id.show_completed:
-                setTasksToShow(SHOW_COMPLETED_TASKS);
-                recreate();
-                return true;
 
             case R.id.due_today:
                 setTasksToShow(TASKS_DUE_TODAY);
@@ -391,6 +422,26 @@ public class TaskActivity extends AppCompatActivity {
 
             case R.id.due_month:
                 setTasksToShow(TASKS_DUE_MONTH);
+                recreate();
+                return true;
+
+            case R.id.completed_today:
+                setTasksToShow(TASKS_COMPLETED_TODAY);
+                recreate();
+                return true;
+
+            case R.id.completed_week:
+                setTasksToShow(TASKS_COMPLETED_WEEK);
+                recreate();
+                return true;
+
+            case R.id.completed_month:
+                setTasksToShow(TASKS_COMPLETED_MONTH);
+                recreate();
+                return true;
+
+            case R.id.completed_all:
+                setTasksToShow(SHOW_COMPLETED_TASKS);
                 recreate();
                 return true;
 
@@ -463,6 +514,47 @@ public class TaskActivity extends AppCompatActivity {
                 }
                 return false;
         }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private boolean checkCompletionDate(int completedWhen, String completedDate) throws ParseException {
+        //Get's completedDate filter (today/week/month) and check if current task's completion date fits.
+        Calendar currentCalendar = Calendar.getInstance();
+        Calendar completedCalendar = Calendar.getInstance();
+        String myFormat = "dd/MM/yyyy";
+        SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
+        String currentDate=sdf.format(currentCalendar.getTime());
+        Date taskCompletionDate=sdf.parse(completedDate.substring(11));
+        currentCalendar.setTime(currentCalendar.getTime());
+        completedCalendar.setTime(taskCompletionDate);
+        int currentYear=currentCalendar.getWeekYear();
+        int currentWeek=currentCalendar.get(Calendar.WEEK_OF_YEAR);
+        int currentMonth=currentCalendar.get(Calendar.MONTH);
+        int completedYear=completedCalendar.getWeekYear();
+        int completedWeek=completedCalendar.get(Calendar.WEEK_OF_YEAR);
+        int completedMonth=completedCalendar.get(Calendar.MONTH);
+
+        switch (completedWhen){
+            case TASKS_COMPLETED_TODAY:
+                if (currentDate.equals(completedDate.substring(11))){
+                    return true;
+                }
+                break;
+            case TASKS_COMPLETED_WEEK:
+                if(currentYear==completedYear && currentWeek==completedWeek){
+                    return true;
+                }
+                break;
+            case TASKS_COMPLETED_MONTH:
+                if(currentMonth==completedMonth){
+                    return true;
+                }
+                break;
+
+
+
+        }
+        return false;
+    }
 
     }
 

@@ -14,10 +14,33 @@
         android:title="Show open tasks"
         app:showAsAction="never"/>
 
+
     <item
         android:id="@+id/show_completed"
-        android:title="Show completed tasks"
-        app:showAsAction="never"/>
+        android:title="Show tasks completed"
+        app:showAsAction="never">
+        <menu>
+            <item
+                android:id="@+id/completed_today"
+                android:title="Today"
+                app:showAsAction="never"/>
+            <item
+                android:id="@+id/completed_week"
+                android:title="This week"
+                app:showAsAction="never"/>
+            <item
+                android:id="@+id/completed_month"
+                android:title="This month"
+                app:showAsAction="never"/>
+
+            <item
+                android:id="@+id/completed_all"
+                android:title="All time"
+                app:showAsAction="never"/>
+
+
+        </menu>
+    </item>
 
     <item
         android:id="@+id/show_due"
