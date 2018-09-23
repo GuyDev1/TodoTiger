@@ -16,7 +16,9 @@ import android.widget.TextView;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Locale;
 
 /**
@@ -76,9 +78,9 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         creationDateTextView.setText(currentTask.getCreationDate());
 
         //Initialize the creation date TextView in the task_item.xml layout with the ID creation_date
-        TextView dueDateTextView = (TextView) listItemView.findViewById(R.id.due_date);
+        final TextView dueDateTextView = (TextView) listItemView.findViewById(R.id.due_date);
         //Get the task's creation date from the currentTask object and set it in the text view
-        dueDateTextView.setText(currentTask.getDueDate());
+        dueDateTextView.setText(getDueOrCompletedDate(currentTask));
 
         // Initialize Firebase DB
         mFirebaseDatabase = FirebaseDatabase.getInstance();
@@ -93,11 +95,17 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                         .child("users").child(MainActivity.getCurrentUserId())
                         .child(MainActivity.getCurrentTaskListId()).child("tasks").child(currentTask.getId());
                     if (isChecked) {
+                        String completionDate ="Completed: " + new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
                         titleTextView.setBackgroundResource(R.drawable.strike_through);
                         mTaskDatabaseReference.child("completed").setValue(true);
+                        mTaskDatabaseReference.child("completionDate").setValue(completionDate);
+                        dueDateTextView.setText(completionDate);
                     } else {
                         titleTextView.setBackgroundResource(0);
                         mTaskDatabaseReference.child("completed").setValue(false);
+                        mTaskDatabaseReference.child("completionDate").setValue(null);
+                        dueDateTextView.setText(currentTask.getDueDate());
+
                     }
 
             }
@@ -124,6 +132,15 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         }
         else{
             return 0;
+        }
+    }
+
+    private String getDueOrCompletedDate(Task currentTask){
+        if(currentTask.getCompleted()){
+            return currentTask.getCompletionDate();
+        }
+        else{
+            return currentTask.getDueDate();
         }
     }
 }

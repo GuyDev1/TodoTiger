@@ -19,6 +19,9 @@ public class Task {
     /** The task's due date */
     private String mDueDate;
 
+    /** The task's completion date */
+    private String mCompletionDate;
+
     /** The task's notes */
     private String mNotes;
 
@@ -75,11 +78,19 @@ public class Task {
         mCreationDate=creationDate;
     }
 
+
     /**
      * Sets the task's due date.
      */
     public void setDueDate(String dueDate) {
         mDueDate=dueDate;
+    }
+
+    /**
+     * Sets the task's completion date.
+     */
+    public void setCompletionDate(String completionDate) {
+        mCompletionDate=completionDate;
     }
 
     /**
@@ -116,6 +127,13 @@ public class Task {
      */
     public String getCreationDate() {
         return mCreationDate;
+    }
+
+    /**
+     * Returns the task's due date.
+     */
+    public String getCompletionDate() {
+        return mCompletionDate;
     }
 
     /**
