@@ -67,6 +67,12 @@ public class TaskActivity extends AppCompatActivity {
     private Button mTaskCreateButton;
     //Show completed tasks boolean
     private int tasksToShow;
+
+    //SharedPreferences instance
+    private SharedPreferences sharedPref;
+
+    //Task unique integer ID
+    private int taskIdNumber;
     //Variables indicating which tasks to show in the ListView
     public static final int SHOW_ALL_TASKS = 0;
     public static final int SHOW_OPEN_TASKS = 1;
@@ -93,8 +99,9 @@ public class TaskActivity extends AppCompatActivity {
         setContentView(R.layout.task_activity);
 
         //Get task preferences - which tasks to show - show all tasks by default
-        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+         sharedPref = this.getPreferences(Context.MODE_PRIVATE);
         tasksToShow=sharedPref.getInt("tasksToShow",SHOW_ALL_TASKS);
+
 
         //Set up to allow Up navigation to parent activity
         this.getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -132,15 +139,22 @@ public class TaskActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 // Get task title from user and create a new task
-                //Also fetch the FireBase ID and connect it to the new task.
+                //Also fetch the FireBase ID and SharedPreferences ID
                 //And finally get the task's creation date
+                taskIdNumber=sharedPref.getInt("taskIdNumber",0);
                 String creationDate ="Created: " + new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
                 String taskId = mTaskDatabaseReference.push().getKey();
-                Task task = new Task(mTaskEditText.getText().toString(),false,taskId,creationDate,"Due: --/--/----",null);
+                Task task = new Task
+                        (mTaskEditText.getText().toString(),false,taskId,taskIdNumber,
+                                creationDate,"Due: --/--/----",null);
                 mTaskDatabaseReference.child(taskId).setValue(task);
 
                 //add that task to the list's task count
                 mTaskNumDatabaseReference.child("taskNum").setValue(taskCount+1);
+
+                //Increase TaskIdNumber by 1
+                setNewTaskId(taskIdNumber+1);
+
 
 
 
@@ -471,6 +485,13 @@ public class TaskActivity extends AppCompatActivity {
         SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putInt("tasksToShow",tasksToShow);
+        editor.commit();
+    }
+    private void setNewTaskId(int newTaskId){
+        //Get's which tasks to show - and sets the preferences accordingly
+        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putInt("taskIdNumber",newTaskId);
         editor.commit();
     }
 

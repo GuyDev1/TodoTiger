@@ -13,6 +13,9 @@ public class Task {
     /** The task's ID on FireBase DB */
     private String mId;
 
+    /** The task's sharedPreferences ID */
+    private int mIntId;
+
     /** The task's creation date */
     private String mCreationDate;
 
@@ -21,6 +24,12 @@ public class Task {
 
     /** The task's completion date */
     private String mCompletionDate;
+
+    /** The task's reminder date */
+    private String mReminderDate;
+
+    /** The task's reminder time */
+    private String mReminderTime;
 
     /** The task's notes */
     private String mNotes;
@@ -36,15 +45,17 @@ public class Task {
      * @param title is the task's title
      * @param completed indicates whether the task is completed or not
      * @param id is the task's ID from FireBase
+     * @param intId is the task's sharedPreferences ID
      * @param creationDate is the task's creation date
      * @param dueDate is the task's due date
      * @param notes is the task related notes
      */
 
-    public Task(String title, boolean completed, String id, String creationDate,String dueDate,String notes) {
+    public Task(String title, boolean completed, String id,int intId, String creationDate,String dueDate,String notes) {
         mTitle = title;
         mCompleted=completed;
         mId=id;
+        mIntId=intId;
         mCreationDate=creationDate;
         mDueDate=dueDate;
         mNotes=notes;
@@ -72,6 +83,13 @@ public class Task {
     }
 
     /**
+     * Sets the task's sharedPreferences ID.
+     */
+    public void setIntId(int intId) {
+        mIntId=intId;
+    }
+
+    /**
      * Sets the task's creation date.
      */
     public void setCreationDate(String creationDate) {
@@ -91,6 +109,20 @@ public class Task {
      */
     public void setCompletionDate(String completionDate) {
         mCompletionDate=completionDate;
+    }
+
+    /**
+     * Sets the task's reminder date.
+     */
+    public void setReminderDate(String reminderDate) {
+        mReminderDate=reminderDate;
+    }
+
+    /**
+     * Sets the task's reminder time.
+     */
+    public void setReminderTime(String reminderTime) {
+        mReminderTime=reminderTime;
     }
 
     /**
@@ -123,6 +155,13 @@ public class Task {
     }
 
     /**
+     * Returns the task's sharedPreferences ID.
+     */
+    public int getIntId() {
+        return mIntId;
+    }
+
+    /**
      * Returns the task's creation date.
      */
     public String getCreationDate() {
@@ -130,7 +169,7 @@ public class Task {
     }
 
     /**
-     * Returns the task's due date.
+     * Returns the task's completion date.
      */
     public String getCompletionDate() {
         return mCompletionDate;
@@ -141,6 +180,20 @@ public class Task {
      */
     public String getDueDate() {
         return mDueDate;
+    }
+
+    /**
+     * Returns the task's reminder date.
+     */
+    public String getReminderDate() {
+        return mReminderDate;
+    }
+
+    /**
+     * Returns the task's reminder time.
+     */
+    public String getReminderTime() {
+        return mReminderTime;
     }
 
     /**
