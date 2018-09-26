@@ -27,6 +27,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.TimePicker;
 
 import com.google.firebase.database.DatabaseReference;
@@ -71,7 +72,7 @@ public class TaskInfoFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         //Inflate the layout for this fragment
-        View rootView = inflater.inflate(R.layout.task_info, container, false);
+        final View rootView = inflater.inflate(R.layout.task_info, container, false);
 
         // Initialize Firebase components
         mFirebaseDatabase = FirebaseDatabase.getInstance();
@@ -85,7 +86,6 @@ public class TaskInfoFragment extends Fragment {
         mTaskTitle = rootView.findViewById(R.id.input_task_title);
         mTaskTitle.setText(currentTask.getTitle());
         mSaveChangesButton = rootView.findViewById(R.id.save_button);
-
         mSaveChangesButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -115,7 +115,12 @@ public class TaskInfoFragment extends Fragment {
             @Override
             public void onClick(View view) {
                 //Cancel changes and go back to task list
+                Log.d("clicked back!","clicked back");
+                FrameLayout frameLayout=getActivity().findViewById(R.id.frag_container);
+                frameLayout.setClickable(false);
                 getActivity().onBackPressed();
+
+
             }
         });
 
@@ -207,6 +212,7 @@ public class TaskInfoFragment extends Fragment {
         return rootView;
 
         }
+
 
 
 

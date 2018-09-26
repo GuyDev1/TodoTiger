@@ -29,6 +29,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ListView;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -105,6 +106,10 @@ public class TaskActivity extends AppCompatActivity {
 
         //Set up to allow Up navigation to parent activity
         this.getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+        //Make sure TaskInfoFragment doesn't interrupt with ListView clicks
+        FrameLayout frameLayout = findViewById(R.id.frag_container);
+        frameLayout.setClickable(false);
 
         // Initialize Firebase components
         mFirebaseDatabase = FirebaseDatabase.getInstance();
@@ -368,7 +373,6 @@ public class TaskActivity extends AppCompatActivity {
     public boolean onContextItemSelected(MenuItem menuItem){
         AdapterView.AdapterContextMenuInfo info=(AdapterView.AdapterContextMenuInfo)menuItem.getMenuInfo();
         Task taskClicked=mTaskAdapter.getItem(info.position);
-        Log.d("check","" +taskClicked.getTitle());
         switch (menuItem.getItemId()) {
             case 0:
                 mTaskDatabaseReference.child(taskClicked.getId()).removeValue();
@@ -405,6 +409,8 @@ public class TaskActivity extends AppCompatActivity {
                 //Check if the call came from the TaskInfoFragment or the activity
                 Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.frag_container);
                 if(currentFragment!=null && currentFragment.isVisible()){
+                    FrameLayout frameLayout = findViewById(R.id.frag_container);
+                    frameLayout.setClickable(false);
                     this.onBackPressed();
                 }
                 else{
@@ -475,6 +481,8 @@ public class TaskActivity extends AppCompatActivity {
         // and add the transaction to the back stack
         transaction.replace(R.id.frag_container, taskInfo);
         transaction.addToBackStack(null);
+        FrameLayout frameLayout = findViewById(R.id.frag_container);
+        frameLayout.setClickable(true);
 
         // Commit the transaction
         transaction.commit();
@@ -577,7 +585,14 @@ public class TaskActivity extends AppCompatActivity {
         return false;
     }
 
+    @Override
+    public void onBackPressed() {
+        //Make sure TaskInfoFragment that we just quit doesn't interrupt with ListView clicks
+        FrameLayout frameLayout = findViewById(R.id.frag_container);
+        frameLayout.setClickable(false);
+        super.onBackPressed();
     }
+}
 
 
 

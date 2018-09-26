@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">TodoTiger</string>
     <string name="channel_name">TaskChannel</string>
-    <string name="channel_description">Channel for task notifcations</string>
+    <string name="channel_description">Channel for task notifications</string>
 </resources>
