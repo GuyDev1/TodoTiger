@@ -14,6 +14,8 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -23,6 +25,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -30,6 +33,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
+import com.firebase.ui.database.FirebaseRecyclerAdapter;
+import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
@@ -37,6 +42,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 
@@ -65,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mTaskListDatabaseReference;
     private ChildEventListener mChildEventListener;
+    private FirebaseRecyclerAdapter<TaskList, TaskListHolder> firebaseRecyclerAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,11 +83,34 @@ public class MainActivity extends AppCompatActivity {
         //Create the notification channel
         createNotificationChannel();
 
-
+        RecyclerView recyclerView = findViewById(R.id.recycler_view);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+        Query query = rootRef.child("users");
         // Initialize Firebase components
         mFirebaseAuth = FirebaseAuth.getInstance();
         mFirebaseDatabase = FirebaseDatabase.getInstance();
 
+        FirebaseRecyclerOptions<TaskList> firebaseRecyclerOptions = new FirebaseRecyclerOptions.Builder<TaskList>()
+                .setQuery(query, TaskList.class)
+                .build();
+
+        firebaseRecyclerAdapter = new FirebaseRecyclerAdapter<TaskList, TaskListHolder>(firebaseRecyclerOptions) {
+            @Override
+            protected void onBindViewHolder(@NonNull TaskListHolder taskListHolder, int position, @NonNull TaskList blogPost) {
+                taskListHolder.setTaskList(blogPost);
+            }
+
+            @Override
+            public TaskListHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+                View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.tlist_item, parent, false);
+
+                return new TaskListHolder(view);
+            }
+        };
+        recyclerView.setAdapter(firebaseRecyclerAdapter);
+
+/*
         //Check if this user has TaskList's if not - show EmptyStateTextView
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference().child("users");
         rootRef.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -117,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Make the {@link ListView} use the {@link TaskListAdapter} defined above, so that the
         // {@link ListView} will display list items for each {@link TaskList} in the list.
-        listView.setAdapter(mTaskListAdapter);
+        listView.setAdapter(mTaskListAdapter);*/
 
         //Initialize firebase authentication
         mAuthStateListener = new FirebaseAuth.AuthStateListener() {
@@ -178,7 +208,7 @@ public class MainActivity extends AppCompatActivity {
                                         // Get list title from user and create a new task list
                                         //Also fetch the FireBase ID and connect it to the new task list.
                                         String mTaskListId = mTaskListDatabaseReference.push().getKey();
-                                        TaskList taskList = new TaskList(userInput.getText().toString(),mTaskListId);
+                                        TaskList taskList = new TaskList(userInput.getText().toString(),mTaskListId,0);
                                         mTaskListDatabaseReference.child(mTaskListId).setValue(taskList);
                                     }
                                 })
@@ -217,6 +247,7 @@ public class MainActivity extends AppCompatActivity {
                 alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
             }
         });
+        /*
         // Set an item click listener on the ListView, which creates an intent to open
         //the relevant task list and show the tasks inside.
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -240,7 +271,7 @@ public class MainActivity extends AppCompatActivity {
         listView.setLongClickable(true);
         registerForContextMenu(listView);
 
-
+*/
     }
 
     @Override
@@ -291,7 +322,7 @@ public class MainActivity extends AppCompatActivity {
             mFirebaseAuth.removeAuthStateListener(mAuthStateListener);
         }
         mTaskListAdapter.clear();
-        detachDatabaseReadListener();
+       // detachDatabaseReadListener();
 
     }
 
@@ -299,13 +330,13 @@ public class MainActivity extends AppCompatActivity {
 
         //Get reference for the task list for the logged in user and attach the database listener
         mTaskListDatabaseReference=mFirebaseDatabase.getReference().child("users").child(userId);
-        attachDatabaseReadListener();
+     //   attachDatabaseReadListener();
 
     }
 
     private void onSignedOutCleanup() {
-        mTaskListAdapter.clear();
-        detachDatabaseReadListener();
+      //  mTaskListAdapter.clear();
+     //   detachDatabaseReadListener();
     }
     private void attachDatabaseReadListener() {
         if (mChildEventListener == null) {
@@ -414,6 +445,38 @@ public class MainActivity extends AppCompatActivity {
             // or other notification behaviors after this
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(channel);
+        }
+    }
+
+    private class TaskListHolder extends RecyclerView.ViewHolder {
+        private TextView titleTextView, taskNumTextView;
+
+        TaskListHolder(View itemView) {
+            super(itemView);
+            titleTextView = itemView.findViewById(R.id.list_title);
+            taskNumTextView = itemView.findViewById(R.id.num_of_tasks);
+        }
+
+        void setTaskList(TaskList taskList) {
+            String title = taskList.getTitle();
+            titleTextView.setText(title);
+            int taskNum = taskList.getTaskNum();
+            taskNumTextView.setText(taskNum);
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        firebaseRecyclerAdapter.startListening();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        if (firebaseRecyclerAdapter!= null) {
+            firebaseRecyclerAdapter.stopListening();
         }
     }
 

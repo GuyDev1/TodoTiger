@@ -5,13 +5,13 @@ package com.example.guyerez.todotiger;
 public class TaskList {
 
     /** The list's title */
-    private String mTitle="";
+    public String mTitle="";
 
     /** The number of tasks in the list */
-    private int mTaskNum=0;
+    public int mTaskNum=0;
 
     /** The task list's ID on FireBase DB */
-    private String mId;
+    public String mId;
 
 
     public TaskList() {
@@ -24,9 +24,11 @@ public class TaskList {
      * @param id is the list's ID from FireBase
      */
 
-    public TaskList(String title, String id) {
+    public TaskList(String title, String id,int taskNum ) {
         mTitle = title;
         mId=id;
+        mTaskNum=taskNum;
+
     }
 
     /**
