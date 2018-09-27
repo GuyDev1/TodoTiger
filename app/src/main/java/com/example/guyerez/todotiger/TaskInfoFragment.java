@@ -221,7 +221,7 @@ public class TaskInfoFragment extends Fragment {
         String myFormat = "dd/MM/yyyy";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
 
-        dueDate.setText("Due: " + sdf.format(dueCalendar.getTime()));
+        dueDate.setText(sdf.format(dueCalendar.getTime()));
     }
 
     private void updateReminderDateLabel() {

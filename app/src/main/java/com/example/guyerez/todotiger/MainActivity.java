@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
         mFirebaseDatabase = FirebaseDatabase.getInstance();
 
         //Check if this user has TaskList's if not - show EmptyStateTextView
-        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference().child("users");
         rootRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {

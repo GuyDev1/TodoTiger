@@ -95,16 +95,16 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                         .child("users").child(MainActivity.getCurrentUserId())
                         .child(MainActivity.getCurrentTaskListId()).child("tasks").child(currentTask.getId());
                     if (isChecked) {
-                        String completionDate ="Completed: " + new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
+                        String completionDate =new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
                         titleTextView.setBackgroundResource(R.drawable.strike_through);
                         mTaskDatabaseReference.child("completed").setValue(true);
                         mTaskDatabaseReference.child("completionDate").setValue(completionDate);
-                        dueDateTextView.setText(completionDate);
+                        dueDateTextView.setText("Completed: "+completionDate);
                     } else {
                         titleTextView.setBackgroundResource(0);
                         mTaskDatabaseReference.child("completed").setValue(false);
                         mTaskDatabaseReference.child("completionDate").setValue(null);
-                        dueDateTextView.setText(currentTask.getDueDate());
+                        dueDateTextView.setText("Due: "+currentTask.getDueDate());
 
                     }
 
@@ -137,10 +137,10 @@ public class TaskAdapter extends ArrayAdapter<Task> {
 
     private String getDueOrCompletedDate(Task currentTask){
         if(currentTask.getCompleted()){
-            return currentTask.getCompletionDate();
+            return "Completed: "+currentTask.getCompletionDate();
         }
         else{
-            return currentTask.getDueDate();
+            return "Due: "+currentTask.getDueDate();
         }
     }
 }

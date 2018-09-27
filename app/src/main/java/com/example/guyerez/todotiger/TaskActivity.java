@@ -151,7 +151,7 @@ public class TaskActivity extends AppCompatActivity {
                 String taskId = mTaskDatabaseReference.push().getKey();
                 Task task = new Task
                         (mTaskEditText.getText().toString(),false,taskId,taskIdNumber,
-                                creationDate,"Due: --/--/----",null);
+                                creationDate,"",null);
                 mTaskDatabaseReference.child(taskId).setValue(task);
 
                 //add that task to the list's task count
@@ -511,7 +511,7 @@ public class TaskActivity extends AppCompatActivity {
         String myFormat = "dd/MM/yyyy";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
         String currentDate=sdf.format(currentCalendar.getTime());
-        Date taskDueDate=sdf.parse(dueDate.substring(5));
+        Date taskDueDate=sdf.parse(dueDate);
         currentCalendar.setTime(currentCalendar.getTime());
         dueCalendar.setTime(taskDueDate);
         int currentYear=currentCalendar.getWeekYear();
@@ -523,7 +523,7 @@ public class TaskActivity extends AppCompatActivity {
 
         switch (dueWhen){
             case TASKS_DUE_TODAY:
-                if (currentDate.equals(dueDate.substring(5))){
+                if (currentDate.equals(dueDate)){
                     return true;
                 }
                 break;
@@ -552,7 +552,7 @@ public class TaskActivity extends AppCompatActivity {
         String myFormat = "dd/MM/yyyy";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
         String currentDate=sdf.format(currentCalendar.getTime());
-        Date taskCompletionDate=sdf.parse(completedDate.substring(11));
+        Date taskCompletionDate=sdf.parse(completedDate);
         currentCalendar.setTime(currentCalendar.getTime());
         completedCalendar.setTime(taskCompletionDate);
         int currentYear=currentCalendar.getWeekYear();
@@ -564,7 +564,7 @@ public class TaskActivity extends AppCompatActivity {
 
         switch (completedWhen){
             case TASKS_COMPLETED_TODAY:
-                if (currentDate.equals(completedDate.substring(11))){
+                if (currentDate.equals(completedDate)){
                     return true;
                 }
                 break;
