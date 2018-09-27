@@ -39,6 +39,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -71,15 +72,53 @@ public class MainActivity extends AppCompatActivity {
         // Set the content of the activity to use the activity_main.xml layout file - the task lists
         setContentView(R.layout.activity_main);
 
+
         //Create the notification channel
         createNotificationChannel();
+
 
         // Initialize Firebase components
         mFirebaseAuth = FirebaseAuth.getInstance();
         mFirebaseDatabase = FirebaseDatabase.getInstance();
 
+        //Check if this user has TaskList's if not - show EmptyStateTextView
+        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+        rootRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                if (!snapshot.hasChild(getCurrentUserId())) {
 
+                        mEmptyStateTextView.setText("No task lists, add a new one!");
+                        loadingIndicator.setVisibility(View.GONE);
+                }
+            }
 
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
+        //Initialize task list Array, ListView and Adapter.
+        final ArrayList<TaskList> taskLists = new ArrayList<TaskList>();
+
+        // Create an {@link TaskListAdapter}, whose data source is a list of {@link TaskList}s.
+        mTaskListAdapter = new TaskListAdapter(this, taskLists);
+
+        // Locate the {@link ListView} object in the view hierarchy of the {@link Activity}.
+        ListView listView = (ListView) findViewById(R.id.task_list_view);
+
+        //Set the empty view
+        mEmptyStateTextView = (TextView) findViewById(R.id.empty_view);
+        listView.setEmptyView(mEmptyStateTextView);
+
+        //Initialize the loading indicator
+        loadingIndicator = findViewById(R.id.loading_indicator);
+        loadingIndicator.setVisibility(View.VISIBLE);
+
+        // Make the {@link ListView} use the {@link TaskListAdapter} defined above, so that the
+        // {@link ListView} will display list items for each {@link TaskList} in the list.
+        listView.setAdapter(mTaskListAdapter);
 
         //Initialize firebase authentication
         mAuthStateListener = new FirebaseAuth.AuthStateListener() {
@@ -108,28 +147,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         };
-
-
-        //Initialize task list Array, ListView and Adapter.
-        final ArrayList<TaskList> taskLists = new ArrayList<TaskList>();
-
-        // Create an {@link TaskListAdapter}, whose data source is a list of {@link TaskList}s.
-        mTaskListAdapter = new TaskListAdapter(this, taskLists);
-
-        // Locate the {@link ListView} object in the view hierarchy of the {@link Activity}.
-        ListView listView = (ListView) findViewById(R.id.task_list_view);
-
-        //Set the empty view
-        mEmptyStateTextView = (TextView) findViewById(R.id.empty_view);
-        listView.setEmptyView(mEmptyStateTextView);
-
-        //Initialize the loading indicator
-        loadingIndicator = findViewById(R.id.loading_indicator);
-        loadingIndicator.setVisibility(View.INVISIBLE);
-
-        // Make the {@link ListView} use the {@link TaskListAdapter} defined above, so that the
-        // {@link ListView} will display list items for each {@link TaskList} in the list.
-        listView.setAdapter(mTaskListAdapter);
 
         //Set and create the FAB and it's action listener
         FloatingActionButton fab = findViewById(R.id.fab);
@@ -224,6 +241,7 @@ public class MainActivity extends AppCompatActivity {
         listView.setLongClickable(true);
         registerForContextMenu(listView);
 
+
     }
 
     @Override
@@ -264,7 +282,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         mFirebaseAuth.addAuthStateListener(mAuthStateListener);
-    }
+
+        }
+
     @Override
     protected void onPause() {
         super.onPause();
@@ -280,11 +300,7 @@ public class MainActivity extends AppCompatActivity {
 
         //Get reference for the task list for the logged in user and attach the database listener
         mTaskListDatabaseReference=mFirebaseDatabase.getReference().child("users").child(userId);
-        loadingIndicator.setVisibility(View.VISIBLE);
         attachDatabaseReadListener();
-        mEmptyStateTextView.setText("No task lists, add a new one!");
-        loadingIndicator.setVisibility(View.GONE);
-
 
     }
 
@@ -297,6 +313,7 @@ public class MainActivity extends AppCompatActivity {
             mChildEventListener = new ChildEventListener() {
                 @Override
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                    loadingIndicator.setVisibility(View.GONE);
                     TaskList taskList = dataSnapshot.getValue(TaskList.class);
                     mTaskListAdapter.add(taskList);
                 }
@@ -394,8 +411,5 @@ public class MainActivity extends AppCompatActivity {
             notificationManager.createNotificationChannel(channel);
         }
     }
-
-
-
 
 }
