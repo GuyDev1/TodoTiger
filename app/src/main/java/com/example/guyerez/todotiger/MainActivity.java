@@ -87,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
                 if (!snapshot.hasChild(getCurrentUserId())) {
-
+                    mEmptyStateTextView.setVisibility(View.VISIBLE);
                         mEmptyStateTextView.setText("No task lists, add a new one!");
                         loadingIndicator.setVisibility(View.GONE);
                 }
@@ -110,7 +110,6 @@ public class MainActivity extends AppCompatActivity {
 
         //Set the empty view
         mEmptyStateTextView = (TextView) findViewById(R.id.empty_view);
-        listView.setEmptyView(mEmptyStateTextView);
 
         //Initialize the loading indicator
         loadingIndicator = findViewById(R.id.loading_indicator);
@@ -313,12 +312,18 @@ public class MainActivity extends AppCompatActivity {
             mChildEventListener = new ChildEventListener() {
                 @Override
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                    mEmptyStateTextView.setVisibility(View.GONE);
                     loadingIndicator.setVisibility(View.GONE);
                     TaskList taskList = dataSnapshot.getValue(TaskList.class);
                     mTaskListAdapter.add(taskList);
                 }
                 public void onChildChanged(DataSnapshot dataSnapshot, String s) {}
-                public void onChildRemoved(DataSnapshot dataSnapshot) {}
+                public void onChildRemoved(DataSnapshot dataSnapshot) {
+                    if(mTaskListAdapter.isEmpty()){
+                        mEmptyStateTextView.setVisibility(View.VISIBLE);
+                        mEmptyStateTextView.setText("No task lists, add a new one!");
+                    }
+                }
                 public void onChildMoved(DataSnapshot dataSnapshot, String s) {}
                 public void onCancelled(DatabaseError databaseError) {}
             };
