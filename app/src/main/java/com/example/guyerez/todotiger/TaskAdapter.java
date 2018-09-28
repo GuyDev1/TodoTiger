@@ -1,16 +1,12 @@
 package com.example.guyerez.todotiger;
 
-import android.app.Activity;
 import android.content.Context;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.firebase.database.DatabaseReference;
@@ -101,7 +97,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                         mTaskDatabaseReference.child("completionDate").setValue(completionDate);
                         dueDateTextView.setText("Completed: "+completionDate);
                     } else {
-                        titleTextView.setBackgroundResource(0);
+                        titleTextView.setBackgroundResource(R.drawable.task_clicked);
                         mTaskDatabaseReference.child("completed").setValue(false);
                         mTaskDatabaseReference.child("completionDate").setValue(null);
                         dueDateTextView.setText("Due: "+currentTask.getDueDate());
@@ -111,7 +107,6 @@ public class TaskAdapter extends ArrayAdapter<Task> {
             }
             }
         );
-
         titleTextView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -131,7 +126,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
             return R.drawable.strike_through;
         }
         else{
-            return 0;
+            return R.drawable.task_clicked;
         }
     }
 
