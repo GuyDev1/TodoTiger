@@ -1,12 +1,8 @@
 package com.example.guyerez.todotiger;
 
 import android.annotation.TargetApi;
-import android.app.AlertDialog;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
+import android.app.Dialog;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
@@ -18,45 +14,38 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.ContextMenu;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+
+import android.widget.Adapter;
 import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemLongClickListener;
+
 import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ListView;
-import android.widget.RadioGroup;
+
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.firebase.ui.auth.AuthUI;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.MutableData;
-import com.google.firebase.database.Transaction;
 import com.google.firebase.database.ValueEventListener;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
 public class TaskActivity extends AppCompatActivity {
     final Context context = this;
+    //The current TaskAdapter
     private TaskAdapter mTaskAdapter;
     private int taskCount;
     // TextView that is displayed when the list is empty //
@@ -92,6 +81,18 @@ public class TaskActivity extends AppCompatActivity {
     private DatabaseReference mTaskDatabaseReference;
     private DatabaseReference mTaskNumDatabaseReference;
     private ChildEventListener mChildEventListener;
+    private ChildEventListener mChildEventListener2;
+    private DatabaseReference mTaskDatabaseReference2;
+    private DatabaseReference mTaskListDatabaseReference;
+    private DatabaseReference mTaskNumDatabaseReference2;
+
+    //Variables for moving Tasks from one TaskList to another
+    private int taskCount2;
+    private boolean flag;
+    private TaskListAdapter mTaskListAdapter;
+    private ListView taskListsView;
+    private String currentTaskListId;
+    private Dialog dialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -197,13 +198,17 @@ public class TaskActivity extends AppCompatActivity {
 
 
 
-        //Get reference for the task list for the logged in user and attach the database listener
+        //Get reference for the task list that belongs to the logged in user and attach the database listener
         mTaskDatabaseReference=mFirebaseDatabase.getReference().child("users")
                 .child(MainActivity.getCurrentUserId())
                 .child(MainActivity.getCurrentTaskListId()).child("tasks");
+        //Get a reference to check the number of tasks in the TaskList
         mTaskNumDatabaseReference=mFirebaseDatabase.getReference().child("users")
                 .child(MainActivity.getCurrentUserId())
                 .child(MainActivity.getCurrentTaskListId());
+        //Get a reference to obtain the TaskList ListView for moving around tasks.
+        mTaskListDatabaseReference=mFirebaseDatabase.getReference().child("users")
+                .child(MainActivity.getCurrentUserId());
 
 
         //add listener to get the current task count in this specific task list
@@ -223,6 +228,8 @@ public class TaskActivity extends AppCompatActivity {
                 System.out.println("The read failed: " + databaseError.getCode());
             }
         });
+
+
     }
 
     @Override
@@ -366,15 +373,17 @@ public class TaskActivity extends AppCompatActivity {
             AdapterView.AdapterContextMenuInfo info =(AdapterView.AdapterContextMenuInfo)menuInfo;
             menu.add(0,0,0,"Delete");
             menu.add(0,1,1,"info");
+            menu.add(0,2,2,"Move to");
         }
     }
 
     @Override
     public boolean onContextItemSelected(MenuItem menuItem){
         AdapterView.AdapterContextMenuInfo info=(AdapterView.AdapterContextMenuInfo)menuItem.getMenuInfo();
-        Task taskClicked=mTaskAdapter.getItem(info.position);
+        Task taskClicked = mTaskAdapter.getItem(info.position);
         switch (menuItem.getItemId()) {
             case 0:
+                //Delete the selected task
                 mTaskDatabaseReference.child(taskClicked.getId()).removeValue();
                 mTaskAdapter.remove(taskClicked);
                 Toast.makeText(this, "Task deleted!", Toast.LENGTH_LONG).show();
@@ -384,6 +393,16 @@ public class TaskActivity extends AppCompatActivity {
                 //Open the TaskInfoFragment for this task
                 getTaskInfo(taskClicked);
                 break;
+
+
+            case 2:
+                //Pop a dialog and allow the user to choose a TaskList to move the current task to
+                getTaskLists();
+                setTaskMoveDialog();
+                dialog.show();
+                moveTaskToSelectedList(taskClicked);
+                break;
+
 
             default:
                 break;
@@ -592,7 +611,132 @@ public class TaskActivity extends AppCompatActivity {
         frameLayout.setClickable(false);
         super.onBackPressed();
     }
-}
+
+    // "fromPath" and "toPath" are like directories in the DB - we move the task from one to the other.
+    private void moveTaskFireBase(final DatabaseReference fromPath, final DatabaseReference toPath, final String key) {
+        fromPath.child(key).addListenerForSingleValueEvent(new ValueEventListener() {
+            // Now "DataSnapshot" holds the key and the value at the "fromPath".
+            // So we copy it and transfer it to "toPath"
+            //Then we delete the current task in "fromPath"
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                toPath.child(dataSnapshot.getKey())
+                        .setValue(dataSnapshot.getValue(), new DatabaseReference.CompletionListener() {
+                            @Override
+                            public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                                if (databaseError == null) {
+                                    Log.i("TaskActivity", "onComplete: success");
+                                    // In order to complete the move, we erase the original copy
+                                    // by assigning null as its value.
+                                    fromPath.child(key).setValue(null);
+
+                                }
+                                else {
+                                    Log.e("TaskActivity", "onComplete: failure:" + databaseError.getMessage() + ": "
+                                            + databaseError.getDetails());
+                                }
+                            }
+                        });
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.e("TaskActivity", "onCancelled: " + databaseError.getMessage() + ": "
+                        + databaseError.getDetails());
+            }
+        });
+    }
+
+    private void getTaskLists(){
+        //Starts a childEventListener to get the list of TaskLists
+        mChildEventListener2 = new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+
+                TaskList taskList = dataSnapshot.getValue(TaskList.class);
+                //Don't show current TaskList in the move-to ListView (you're already there)
+                if(!taskList.getId().equals(MainActivity.getCurrentTaskListId())) {
+                    mTaskListAdapter.add(taskList);
+                }
+            }
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {}
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+            }
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {}
+            public void onCancelled(DatabaseError databaseError) {}
+        };
+        mTaskListDatabaseReference.addChildEventListener(mChildEventListener2);
+    }
+    private void setTaskMoveDialog(){
+        //Initialize TaskList Array, ListView and Adapter for the popup dialog ListView
+        final ArrayList<TaskList> taskLists = new ArrayList<TaskList>();
+        dialog = new Dialog(TaskActivity.this,R.style.CustomDialog);
+        dialog.setContentView(R.layout.move_task_dialog);
+        dialog.setTitle("Choose a TaskList");
+        taskListsView= (ListView) dialog.findViewById(R.id.List);
+        // Create an {@link TaskListAdapter}, whose data source is a list of {@link TaskList}s.
+        mTaskListAdapter = new TaskListAdapter(this, taskLists);
+        taskListsView.setAdapter(mTaskListAdapter);
+    }
+    private void moveTaskToSelectedList(final Task task){
+        //Initialize an onItemClickListener to allow the user to choose a TaskList
+        //And then move the chosen task into that TaskList
+        taskListsView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+                // Find the current task list that was clicked on
+                TaskList currentTaskList = mTaskListAdapter.getItem(position);
+
+                //get the current task list's ID
+                currentTaskListId=currentTaskList.getId();
+                //Get references for that specific TaskList and the number of tasks in it
+                mTaskDatabaseReference2=mFirebaseDatabase.getReference().child("users")
+                        .child(MainActivity.getCurrentUserId())
+                        .child(currentTaskListId).child("tasks");
+                mTaskNumDatabaseReference2=mFirebaseDatabase.getReference().child("users")
+                        .child(MainActivity.getCurrentUserId())
+                        .child(currentTaskListId);
+
+                //Move the task inside the DB to another TaskList
+                moveTaskFireBase(mTaskDatabaseReference,mTaskDatabaseReference2,task.getId());
+
+                //Set flag to true to avoid an infinite loop while updating the taskNum for that TaskList
+                flag=true;
+                mTaskNumDatabaseReference2.addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        taskCount2 =dataSnapshot.getValue(TaskList.class).getTaskNum();
+                        if(flag) {
+                            flag=false;
+                            mTaskNumDatabaseReference2.child("taskNum").setValue(taskCount2 + 1);
+                        }
+
+
+
+
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+                        System.out.println("The read failed: " + databaseError.getCode());
+                    }
+                });
+
+                //Remove the task from the current TaskAdapter and dismiss the dialog
+                mTaskAdapter.remove(task);
+                dialog.dismiss();
+                Toast.makeText(TaskActivity.this,"Task moved!", Toast.LENGTH_LONG).show();
+
+            }
+        });
+
+    }
+
+
+
+    }
+
 
 
 
