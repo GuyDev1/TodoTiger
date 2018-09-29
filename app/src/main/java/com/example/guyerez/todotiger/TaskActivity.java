@@ -3,9 +3,11 @@ package com.example.guyerez.todotiger;
 import android.annotation.TargetApi;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.NavUtils;
@@ -115,10 +117,30 @@ public class TaskActivity extends AppCompatActivity {
         // Initialize Firebase components
         mFirebaseDatabase = FirebaseDatabase.getInstance();
 
+        //Check if this user has Tasks if not - show EmptyStateTextView
+        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference().child("users")
+                .child(MainActivity.getCurrentUserId()).child(MainActivity.getCurrentTaskListId());
+        rootRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                if (!snapshot.hasChild("tasks")) {
+                    mEmptyStateTextView.setVisibility(View.VISIBLE);
+                    mEmptyStateTextView.setText("No tasks, add a new one!");
+                    loadingIndicator.setVisibility(View.GONE);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
         // Initialize references to views
 
         mTaskEditText = (EditText) findViewById(R.id.task_edit_text);
         mTaskCreateButton = (Button) findViewById(R.id.create_task_button);
+
 
         // Enable create button when input is not empty
         mTaskEditText.addTextChangedListener(new TextWatcher() {
@@ -181,11 +203,10 @@ public class TaskActivity extends AppCompatActivity {
 
         //Set the empty view
         mEmptyStateTextView = (TextView) findViewById(R.id.empty_view);
-        listView.setEmptyView(mEmptyStateTextView);
 
         //Initialize the loading indicator
         loadingIndicator = findViewById(R.id.loading_indicator);
-        loadingIndicator.setVisibility(View.INVISIBLE);
+        loadingIndicator.setVisibility(View.VISIBLE);
 
         // Make the {@link ListView} use the {@link TaskAdapter} defined above, so that the
         // {@link ListView} will display list items for each {@link Task} in the list.
@@ -199,16 +220,23 @@ public class TaskActivity extends AppCompatActivity {
 
 
         //Get reference for the task list that belongs to the logged in user and attach the database listener
-        mTaskDatabaseReference=mFirebaseDatabase.getReference().child("users")
-                .child(MainActivity.getCurrentUserId())
-                .child(MainActivity.getCurrentTaskListId()).child("tasks");
-        //Get a reference to check the number of tasks in the TaskList
-        mTaskNumDatabaseReference=mFirebaseDatabase.getReference().child("users")
-                .child(MainActivity.getCurrentUserId())
-                .child(MainActivity.getCurrentTaskListId());
-        //Get a reference to obtain the TaskList ListView for moving around tasks.
-        mTaskListDatabaseReference=mFirebaseDatabase.getReference().child("users")
-                .child(MainActivity.getCurrentUserId());
+        if(MainActivity.getCurrentUserId()!=null && MainActivity.getCurrentTaskListId()!=null){
+            mTaskDatabaseReference=mFirebaseDatabase.getReference().child("users")
+                    .child(MainActivity.getCurrentUserId())
+                    .child(MainActivity.getCurrentTaskListId()).child("tasks");
+            //Get a reference to check the number of tasks in the TaskList
+            mTaskNumDatabaseReference=mFirebaseDatabase.getReference().child("users")
+                    .child(MainActivity.getCurrentUserId())
+                    .child(MainActivity.getCurrentTaskListId());
+            //Get a reference to obtain the TaskList ListView for moving around tasks.
+            mTaskListDatabaseReference=mFirebaseDatabase.getReference().child("users")
+                    .child(MainActivity.getCurrentUserId());
+        }
+        else{
+            //No TaskList is registered or no user is logged in - start the MainActivity
+            startActivity(new Intent(TaskActivity.this, MainActivity.class));
+        }
+
 
 
         //add listener to get the current task count in this specific task list
@@ -235,10 +263,7 @@ public class TaskActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        loadingIndicator.setVisibility(View.VISIBLE);
         attachDatabaseReadListener();
-        mEmptyStateTextView.setText("No tasks, add a new one!");
-        loadingIndicator.setVisibility(View.GONE);
 
     }
     @Override
@@ -257,6 +282,8 @@ public class TaskActivity extends AppCompatActivity {
                 @RequiresApi(api = Build.VERSION_CODES.N)
                 @Override
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                    mEmptyStateTextView.setVisibility(View.GONE);
+                    loadingIndicator.setVisibility(View.GONE);
                     Task task = dataSnapshot.getValue(Task.class);
                     switch (tasksToShow){
                         case SHOW_ALL_TASKS:
@@ -346,6 +373,10 @@ public class TaskActivity extends AppCompatActivity {
                 public void onChildChanged(DataSnapshot dataSnapshot, String s) { ;
                 }
                 public void onChildRemoved(DataSnapshot dataSnapshot) {
+                    if(mTaskAdapter.isEmpty()){
+                        mEmptyStateTextView.setVisibility(View.VISIBLE);
+                        mEmptyStateTextView.setText("No task lists, add a new one!");
+                    }
                     mTaskNumDatabaseReference.child("taskNum").setValue(taskCount-1);
                 }
                 public void onChildMoved(DataSnapshot dataSnapshot, String s) {}
