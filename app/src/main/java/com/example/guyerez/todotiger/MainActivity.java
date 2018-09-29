@@ -42,6 +42,8 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -177,8 +179,11 @@ public class MainActivity extends AppCompatActivity {
                                     public void onClick(DialogInterface dialog,int id) {
                                         // Get list title from user and create a new task list
                                         //Also fetch the FireBase ID and connect it to the new task list.
+                                        //And finally get the TaskList's creation date
+                                        Calendar calendar=Calendar.getInstance();
+                                        Date creationDate =calendar.getTime();
                                         String mTaskListId = mTaskListDatabaseReference.push().getKey();
-                                        TaskList taskList = new TaskList(userInput.getText().toString(),mTaskListId);
+                                        TaskList taskList = new TaskList(userInput.getText().toString(),mTaskListId,creationDate);
                                         mTaskListDatabaseReference.child(mTaskListId).setValue(taskList);
                                     }
                                 })

@@ -1,4 +1,7 @@
 package com.example.guyerez.todotiger;
+
+import java.util.Date;
+
 /**
  * An {@link Task} object contains information about a specific task
  */
@@ -17,13 +20,13 @@ public class Task {
     private int mIntId;
 
     /** The task's creation date */
-    private String mCreationDate;
+    private Date mCreationDate;
 
     /** The task's due date */
-    private String mDueDate;
+    private Date mDueDate;
 
     /** The task's completion date */
-    private String mCompletionDate;
+    private Date mCompletionDate;
 
     /** The task's reminder date */
     private String mReminderDate;
@@ -51,7 +54,7 @@ public class Task {
      * @param notes is the task related notes
      */
 
-    public Task(String title, boolean completed, String id,int intId, String creationDate,String dueDate,String notes) {
+    public Task(String title, boolean completed, String id,int intId, Date creationDate,Date dueDate,String notes) {
         mTitle = title;
         mCompleted=completed;
         mId=id;
@@ -92,7 +95,7 @@ public class Task {
     /**
      * Sets the task's creation date.
      */
-    public void setCreationDate(String creationDate) {
+    public void setCreationDate(Date creationDate) {
         mCreationDate=creationDate;
     }
 
@@ -100,14 +103,14 @@ public class Task {
     /**
      * Sets the task's due date.
      */
-    public void setDueDate(String dueDate) {
+    public void setDueDate(Date dueDate) {
         mDueDate=dueDate;
     }
 
     /**
      * Sets the task's completion date.
      */
-    public void setCompletionDate(String completionDate) {
+    public void setCompletionDate(Date completionDate) {
         mCompletionDate=completionDate;
     }
 
@@ -164,21 +167,21 @@ public class Task {
     /**
      * Returns the task's creation date.
      */
-    public String getCreationDate() {
+    public Date getCreationDate() {
         return mCreationDate;
     }
 
     /**
      * Returns the task's completion date.
      */
-    public String getCompletionDate() {
+    public Date getCompletionDate() {
         return mCompletionDate;
     }
 
     /**
      * Returns the task's due date.
      */
-    public String getDueDate() {
+    public Date getDueDate() {
         return mDueDate;
     }
 

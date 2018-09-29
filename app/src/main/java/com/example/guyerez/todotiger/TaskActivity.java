@@ -42,6 +42,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Locale;
 
@@ -58,7 +59,7 @@ public class TaskActivity extends AppCompatActivity {
     private EditText mTaskEditText;
     private Button mTaskCreateButton;
     //Show completed tasks boolean
-    private int tasksToShow;
+    public static int tasksToShow;
 
     //SharedPreferences instance
     private SharedPreferences sharedPref;
@@ -170,11 +171,12 @@ public class TaskActivity extends AppCompatActivity {
                 //Also fetch the FireBase ID and SharedPreferences ID
                 //And finally get the task's creation date
                 taskIdNumber=sharedPref.getInt("taskIdNumber",0);
-                String creationDate ="Created: " + new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
+                Calendar calendar=Calendar.getInstance();
+                Date creationDate =calendar.getTime();
                 String taskId = mTaskDatabaseReference.push().getKey();
                 Task task = new Task
                         (mTaskEditText.getText().toString(),false,taskId,taskIdNumber,
-                                creationDate,"",null);
+                                creationDate,null,null);
                 mTaskDatabaseReference.child(taskId).setValue(task);
 
                 //add that task to the list's task count
@@ -287,6 +289,7 @@ public class TaskActivity extends AppCompatActivity {
                     Task task = dataSnapshot.getValue(Task.class);
                     switch (tasksToShow){
                         case SHOW_ALL_TASKS:
+
                             mTaskAdapter.add(task);
                             break;
 
@@ -303,7 +306,7 @@ public class TaskActivity extends AppCompatActivity {
 
                         case TASKS_DUE_TODAY:
                             try {
-                                if(!task.getCompleted() && checkDueDate(TASKS_DUE_TODAY,task.getDueDate())){
+                                if(!task.getCompleted() && task.getDueDate()!=null && checkDueDate(TASKS_DUE_TODAY,task.getDueDate())){
                                     mTaskAdapter.add(task);
 
                                 }
@@ -313,7 +316,7 @@ public class TaskActivity extends AppCompatActivity {
                             break;
                         case TASKS_DUE_WEEK:
                             try {
-                                if(!task.getCompleted() && checkDueDate(TASKS_DUE_WEEK,task.getDueDate())){
+                                if(!task.getCompleted() && task.getDueDate()!=null && checkDueDate(TASKS_DUE_WEEK,task.getDueDate())){
                                     mTaskAdapter.add(task);
 
                                 }
@@ -324,7 +327,7 @@ public class TaskActivity extends AppCompatActivity {
 
                         case TASKS_DUE_MONTH:
                             try {
-                                if(!task.getCompleted() && checkDueDate(TASKS_DUE_MONTH,task.getDueDate())){
+                                if(!task.getCompleted() && task.getDueDate()!=null && checkDueDate(TASKS_DUE_MONTH,task.getDueDate())){
                                     mTaskAdapter.add(task);
 
                                 }
@@ -554,26 +557,24 @@ public class TaskActivity extends AppCompatActivity {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
-    private boolean checkDueDate(int dueWhen, String dueDate) throws ParseException {
+    private boolean checkDueDate(int dueWhen, Date dueDate) throws ParseException {
         //Get's duedate filter (today/week/month) and check if current task's due date fits.
         Calendar currentCalendar = Calendar.getInstance();
         Calendar dueCalendar = Calendar.getInstance();
-        String myFormat = "dd/MM/yyyy";
-        SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
-        String currentDate=sdf.format(currentCalendar.getTime());
-        Date taskDueDate=sdf.parse(dueDate);
         currentCalendar.setTime(currentCalendar.getTime());
-        dueCalendar.setTime(taskDueDate);
+        dueCalendar.setTime(dueDate);
+        int currentDay=currentCalendar.get(Calendar.DAY_OF_YEAR);
         int currentYear=currentCalendar.getWeekYear();
         int currentWeek=currentCalendar.get(Calendar.WEEK_OF_YEAR);
         int currentMonth=currentCalendar.get(Calendar.MONTH);
+        int dueDay=dueCalendar.get(Calendar.DAY_OF_YEAR);
         int dueYear=dueCalendar.getWeekYear();
         int dueWeek=dueCalendar.get(Calendar.WEEK_OF_YEAR);
         int dueMonth=dueCalendar.get(Calendar.MONTH);
 
         switch (dueWhen){
             case TASKS_DUE_TODAY:
-                if (currentDate.equals(dueDate)){
+                if (currentYear==dueYear && currentDay==dueDay){
                     return true;
                 }
                 break;
@@ -595,26 +596,24 @@ public class TaskActivity extends AppCompatActivity {
         }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
-    private boolean checkCompletionDate(int completedWhen, String completedDate) throws ParseException {
+    private boolean checkCompletionDate(int completedWhen, Date completedDate) throws ParseException {
         //Get's completedDate filter (today/week/month) and check if current task's completion date fits.
         Calendar currentCalendar = Calendar.getInstance();
         Calendar completedCalendar = Calendar.getInstance();
-        String myFormat = "dd/MM/yyyy";
-        SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
-        String currentDate=sdf.format(currentCalendar.getTime());
-        Date taskCompletionDate=sdf.parse(completedDate);
         currentCalendar.setTime(currentCalendar.getTime());
-        completedCalendar.setTime(taskCompletionDate);
+        completedCalendar.setTime(completedDate);
+        int currentDay=currentCalendar.get(Calendar.DAY_OF_YEAR);
         int currentYear=currentCalendar.getWeekYear();
         int currentWeek=currentCalendar.get(Calendar.WEEK_OF_YEAR);
         int currentMonth=currentCalendar.get(Calendar.MONTH);
+        int completedDay=completedCalendar.get(Calendar.DAY_OF_YEAR);
         int completedYear=completedCalendar.getWeekYear();
         int completedWeek=completedCalendar.get(Calendar.WEEK_OF_YEAR);
         int completedMonth=completedCalendar.get(Calendar.MONTH);
 
         switch (completedWhen){
             case TASKS_COMPLETED_TODAY:
-                if (currentDate.equals(completedDate)){
+                if (currentYear==completedYear && currentDay==completedDay){
                     return true;
                 }
                 break;

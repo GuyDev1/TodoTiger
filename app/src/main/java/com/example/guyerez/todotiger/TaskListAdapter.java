@@ -1,6 +1,7 @@
 package com.example.guyerez.todotiger;
 
 import android.content.Context;
+import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,6 +10,7 @@ import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Locale;
 
 /**
@@ -53,4 +55,20 @@ public class TaskListAdapter extends ArrayAdapter<TaskList> {
         // Return the whole list item layout (containing 2 TextViews) so that it can be shown in the ListView.
         return listItemView;
     }
+
+    @Override
+    public void add(@Nullable TaskList object) {
+        super.add(object);
+        //Sort the TaskList's by CreationDate
+        this.sort(new Comparator<TaskList>() {
+            @Override
+            public int compare(TaskList o1, TaskList o2) {
+
+                return o1.getCreationDate().compareTo(o2.getCreationDate());
+            }
+        });
+
+        }
+
+
 }

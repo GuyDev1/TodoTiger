@@ -82,6 +82,10 @@ public class TaskInfoFragment extends Fragment {
                 .child(MainActivity.getCurrentUserId())
                 .child(MainActivity.getCurrentTaskListId()).child("tasks").child(currentTask.getId());
 
+        //Get SimpleDateFormat to format task's dates and Calendar instance:
+        String myFormat = "dd/MM/yyyy";
+        final SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
+
         // Initialize references to views
         mTaskTitle = rootView.findViewById(R.id.input_task_title);
         mTaskTitle.setText(currentTask.getTitle());
@@ -91,7 +95,7 @@ public class TaskInfoFragment extends Fragment {
             public void onClick(View view) {
                 // Save edited task info
                 mTaskDatabaseReference.child("title").setValue(mTaskTitle.getText().toString());
-                mTaskDatabaseReference.child("dueDate").setValue(dueDate.getText().toString());
+                mTaskDatabaseReference.child("dueDate").setValue(dueCalendar.getTime());
                 mTaskDatabaseReference.child("reminderDate").setValue(reminderDate.getText().toString());
                 mTaskDatabaseReference.child("reminderTime").setValue(reminderTime.getText().toString());
                 mTaskDatabaseReference.child("notes").setValue(mTaskNotes.getText().toString());
@@ -128,7 +132,10 @@ public class TaskInfoFragment extends Fragment {
         //Initialize dueDatePicker related variables
         dueCalendar = Calendar.getInstance();
         dueDate = (EditText) rootView.findViewById(R.id.due_date_picker);
-        dueDate.setText(currentTask.getDueDate());
+        if(currentTask.getDueDate()!=null){
+            dueDate.setText(sdf.format(currentTask.getDueDate()));
+        }
+
         dateDue = new DatePickerDialog.OnDateSetListener() {
 
             //Set the DatePicker
