@@ -1,7 +1,9 @@
 package com.example.guyerez.todotiger;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -64,7 +66,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
     }
 
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(int position, View convertView, final ViewGroup parent) {
         // Check if an existing view is being reused, otherwise inflate the view
         View listItemView = convertView;
         if (listItemView == null) {
@@ -122,16 +124,42 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                         mTaskDatabaseReference.child("completed").setValue(true);
                         mTaskDatabaseReference.child("completionDate").setValue(completionDate);
                         dueDateTextView.setText("Completed: "+sdf.format(completionDate));
+                        //After a small delay for better animation effect
+                        //Remove the task from current adapter if it's not in SHOW_ALL_TASKs
+                        // Since the user completed the task
+                        if(TaskActivity.tasksToShow!=SHOW_ALL_TASKS){
+                            final Handler handler = new Handler();
+                            handler.postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                        remove(currentTask);
+                                }}, 500);
+                        }
+
+
                     } else {
                         titleTextView.setBackgroundResource(R.drawable.task_clicked);
                         mTaskDatabaseReference.child("completed").setValue(false);
                         mTaskDatabaseReference.child("completionDate").setValue(null);
-                        dueDateTextView.setText("Due: "+sdf.format(currentTask.getDueDate()));
+                        if(currentTask.getDueDate()!=null){
+                            dueDateTextView.setText("Due: "+sdf.format(currentTask.getDueDate()));
+                        }
+                        else{
+                            dueDateTextView.setText("Due: ");
+                        }
+                        if(TaskActivity.tasksToShow!=SHOW_ALL_TASKS){
+                            final Handler handler = new Handler();
+                            handler.postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    remove(currentTask);
+                                }}, 500);
+                        }
 
                     }
+            }
+            }
 
-            }
-            }
         );
         titleTextView.setOnClickListener(new View.OnClickListener() {
             @Override

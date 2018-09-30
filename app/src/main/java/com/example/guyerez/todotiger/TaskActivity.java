@@ -170,7 +170,7 @@ public class TaskActivity extends AppCompatActivity {
                 // Get task title from user and create a new task
                 //Also fetch the FireBase ID and SharedPreferences ID
                 //And finally get the task's creation date
-                taskIdNumber=sharedPref.getInt("taskIdNumber",0);
+                taskIdNumber=sharedPref.getInt("taskIdNumber",SHOW_OPEN_TASKS);
                 Calendar calendar=Calendar.getInstance();
                 Date creationDate =calendar.getTime();
                 String taskId = mTaskDatabaseReference.push().getKey();
