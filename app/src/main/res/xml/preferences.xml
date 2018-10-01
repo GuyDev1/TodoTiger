@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:title="Settings">
+
+    <SwitchPreference
+        android:key="show_created_date"
+        android:title="Show task's creation date" />
+
+    <SwitchPreference
+        android:key="show_due_date"
+        android:title="Show task's due date" />
+
+    <SwitchPreference
+        android:key="show_completed_date"
+        android:title="Show task's completion date" />
+
+
+</PreferenceScreen>

@@ -100,11 +100,19 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         //Get the task's creation date from the currentTask object and set it in the text view
 
         creationDateTextView.setText("Created: "+sdf.format(currentTask.getCreationDate()));
+        if(!TaskActivity.showCreated){
+            creationDateTextView.setVisibility(View.GONE);
+        }
+
 
         //Initialize the creation date TextView in the task_item.xml layout with the ID creation_date
         final TextView dueDateTextView = (TextView) listItemView.findViewById(R.id.due_date);
         //Get the task's creation date from the currentTask object and set it in the text view
         dueDateTextView.setText(getDueOrCompletedDate(currentTask));
+        if(!TaskActivity.showDue){
+            dueDateTextView.setVisibility(View.GONE);
+        }
+
 
         // Initialize Firebase DB
         mFirebaseDatabase = FirebaseDatabase.getInstance();
@@ -124,7 +132,11 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                         titleTextView.setBackgroundResource(R.drawable.strike_through);
                         mTaskDatabaseReference.child("completed").setValue(true);
                         mTaskDatabaseReference.child("completionDate").setValue(completionDate);
-                        dueDateTextView.setText("Completed: "+sdf.format(completionDate));
+                        if(TaskActivity.showCompleted){
+                            dueDateTextView.setText("Completed: "+sdf.format(completionDate));
+                            dueDateTextView.setVisibility(View.VISIBLE);
+                        }
+
                         //After a small delay for better animation effect
                         //Remove the task from current adapter if it's not in SHOW_ALL_TASKs
                         // Since the user completed the task

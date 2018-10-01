@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
@@ -61,6 +62,13 @@ public class TaskActivity extends AppCompatActivity {
     //Show completed tasks boolean
     public static int tasksToShow;
 
+    //Show created/due/completed on Task item UI
+    public static boolean showCreated;
+    public static boolean showDue;
+    public static boolean showCompleted;
+
+
+
     //SharedPreferences instance
     private SharedPreferences sharedPref;
 
@@ -107,6 +115,12 @@ public class TaskActivity extends AppCompatActivity {
          sharedPref = this.getPreferences(Context.MODE_PRIVATE);
         tasksToShow=sharedPref.getInt("tasksToShow",SHOW_ALL_TASKS);
 
+        //Get Settings for Task UI preferences
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+        showCreated=settings.getBoolean("show_created_date",true);
+        showDue=settings.getBoolean("show_due_date",true);
+        showCompleted=settings.getBoolean("show_completed_date",true);
+
 
         //Set up to allow Up navigation to parent activity
         this.getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -118,24 +132,7 @@ public class TaskActivity extends AppCompatActivity {
         // Initialize Firebase components
         mFirebaseDatabase = FirebaseDatabase.getInstance();
 
-        //Check if this user has Tasks if not - show EmptyStateTextView
-        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference().child("users")
-                .child(MainActivity.getCurrentUserId()).child(MainActivity.getCurrentTaskListId());
-        rootRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot snapshot) {
-                if (!snapshot.hasChild("tasks")) {
-                    mEmptyStateTextView.setVisibility(View.VISIBLE);
-                    mEmptyStateTextView.setText("No tasks, add a new one!");
-                    loadingIndicator.setVisibility(View.GONE);
-                }
-            }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        });
 
         // Initialize references to views
 
@@ -233,6 +230,24 @@ public class TaskActivity extends AppCompatActivity {
             //Get a reference to obtain the TaskList ListView for moving around tasks.
             mTaskListDatabaseReference=mFirebaseDatabase.getReference().child("users")
                     .child(MainActivity.getCurrentUserId());
+            //Check if this user has Tasks if not - show EmptyStateTextView
+            DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference().child("users")
+                    .child(MainActivity.getCurrentUserId()).child(MainActivity.getCurrentTaskListId());
+            rootRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot snapshot) {
+                    if (!snapshot.hasChild("tasks")) {
+                        mEmptyStateTextView.setVisibility(View.VISIBLE);
+                        mEmptyStateTextView.setText("No tasks, add a new one!");
+                        loadingIndicator.setVisibility(View.GONE);
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                }
+            });
         }
         else{
             //No TaskList is registered or no user is logged in - start the MainActivity

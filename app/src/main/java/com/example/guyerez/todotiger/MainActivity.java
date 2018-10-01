@@ -88,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
         rootRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
-                if (!snapshot.hasChild(getCurrentUserId())) {
+                if (snapshot!=null && !snapshot.hasChild(getCurrentUserId())) {
                     mEmptyStateTextView.setVisibility(View.VISIBLE);
                         mEmptyStateTextView.setText("No task lists, add a new one!");
                         loadingIndicator.setVisibility(View.GONE);
@@ -276,6 +276,10 @@ public class MainActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             case R.id.sign_out:
                 AuthUI.getInstance().signOut(this);
+                return true;
+            case R.id.settings:
+                Intent settingsIntent = new Intent(this, SettingsActivity.class);
+                startActivity(settingsIntent);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

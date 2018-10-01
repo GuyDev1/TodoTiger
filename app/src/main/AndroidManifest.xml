@@ -31,6 +31,14 @@
                 </action>
             </intent-filter>
         </receiver>
+
+        <activity
+            android:name=".SettingsActivity"
+            android:label="Settings">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.example.guyerez.todotiger.MainActivity"/>
+        </activity>
     </application>
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
