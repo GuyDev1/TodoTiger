@@ -3,6 +3,7 @@ package com.example.guyerez.todotiger;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.icu.util.DateInterval;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -19,6 +20,7 @@ import com.google.firebase.database.FirebaseDatabase;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Period;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Comparator;
@@ -99,7 +101,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         TextView creationDateTextView = (TextView) listItemView.findViewById(R.id.creation_date);
         //Get the task's creation date from the currentTask object and set it in the text view
 
-        creationDateTextView.setText("Created: "+sdf.format(currentTask.getCreationDate()));
+        creationDateTextView.setText(getCreationDate(currentTask));
         if(!TaskActivity.showCreated){
             creationDateTextView.setVisibility(View.GONE);
         }
@@ -271,6 +273,22 @@ public class TaskAdapter extends ArrayAdapter<Task> {
 
         }
         return 0;
+
+    }
+
+    private String getCreationDate(Task currentTask){
+        int dayDifference=
+                ((int)((calendar.getTime().getTime()/(24*60*60*1000))
+                        -(int)(currentTask.getCreationDate().getTime()/(24*60*60*1000))));
+        switch (dayDifference){
+            case 0:
+                return "Created today";
+            case 1:
+                return "Created yesterday";
+            default:
+                return String.format(Locale.getDefault(),"Created %d days ago",dayDifference);
+
+        }
 
     }
 }
