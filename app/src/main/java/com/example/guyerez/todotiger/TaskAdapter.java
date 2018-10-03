@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -93,6 +94,12 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         titleTextView.setText(currentTask.getTitle());
         //If the task is completed - title Strikethrough
         titleTextView.setBackgroundResource(strikeCompleted(currentTask.getCompleted()));
+        //Set Title height to fit date TextView's appropriately
+        if(TaskActivity.showCreated || TaskActivity.showDue || TaskActivity.showCompleted){
+            titleTextView.setHeight((int)TypedValue.applyDimension
+                    (TypedValue.COMPLEX_UNIT_DIP, 59,
+                            getContext().getResources().getDisplayMetrics()));
+        }
 
         //Initialize the check box and check it if the task was completed.
 
@@ -310,9 +317,11 @@ public class TaskAdapter extends ArrayAdapter<Task> {
             if(dayDifference>=0){
                 switch (dayDifference) {
                     case 0:
+                        dueDateTextView.setAlpha(1);
                         dueDateTextView.setTextColor(ContextCompat.getColor(getContext(),R.color.green));
                         return "Due today";
                     case 1:
+                        dueDateTextView.setAlpha(1);
                         return "Due tomorrow";
                     default:
                         return String.format(Locale.getDefault(), "Due in %d days", dayDifference);
@@ -320,7 +329,14 @@ public class TaskAdapter extends ArrayAdapter<Task> {
             }
             else{
                  dueDateTextView.setTextColor(ContextCompat.getColor(getContext(),R.color.red));
-                return String.format(Locale.getDefault(), "Due %d days ago", -dayDifference);
+                 dueDateTextView.setAlpha(1);
+                 if(dayDifference==-1){
+                     return "Due yesterday";
+                 }
+                 else{
+                     return String.format(Locale.getDefault(), "Due %d days ago", -dayDifference);
+                 }
+
             }
 
         }
