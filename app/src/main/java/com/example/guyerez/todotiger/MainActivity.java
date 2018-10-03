@@ -88,10 +88,13 @@ public class MainActivity extends AppCompatActivity {
         rootRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
-                if (snapshot!=null && !snapshot.hasChild(getCurrentUserId())) {
+                if (snapshot!=null)
+                {
+                    if(!snapshot.hasChild(getCurrentUserId())) {
                     mEmptyStateTextView.setVisibility(View.VISIBLE);
-                        mEmptyStateTextView.setText("No task lists, add a new one!");
-                        loadingIndicator.setVisibility(View.GONE);
+                    mEmptyStateTextView.setText("No task lists, add a new one!");
+                    loadingIndicator.setVisibility(View.GONE);
+                }
                 }
             }
 

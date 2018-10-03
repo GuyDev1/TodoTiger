@@ -3,9 +3,11 @@ package com.example.guyerez.todotiger;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.icu.util.DateInterval;
 import android.os.Handler;
 import android.support.annotation.Nullable;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -54,6 +56,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
 
     //Get a calendar instance for setting dates
     private Calendar calendar;
+
     /**
      * Create a new {@link TaskAdapter} object.
      *
@@ -108,9 +111,9 @@ public class TaskAdapter extends ArrayAdapter<Task> {
 
 
         //Initialize the creation date TextView in the task_item.xml layout with the ID creation_date
-        final TextView dueDateTextView = (TextView) listItemView.findViewById(R.id.due_date);
+         final TextView dueDateTextView = (TextView) listItemView.findViewById(R.id.due_date);
         //Get the task's creation date from the currentTask object and set it in the text view
-        dueDateTextView.setText(getDueOrCompletedDate(currentTask));
+        dueDateTextView.setText(getDueOrCompletedDate(currentTask,dueDateTextView,null));
         if(!TaskActivity.showDue){
             dueDateTextView.setVisibility(View.GONE);
         }
@@ -135,7 +138,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                         mTaskDatabaseReference.child("completed").setValue(true);
                         mTaskDatabaseReference.child("completionDate").setValue(completionDate);
                         if(TaskActivity.showCompleted){
-                            dueDateTextView.setText("Completed: "+sdf.format(completionDate));
+                            dueDateTextView.setText(getDueOrCompletedDate(currentTask,dueDateTextView,Boolean.TRUE));
                             dueDateTextView.setVisibility(View.VISIBLE);
                         }
 
@@ -156,12 +159,8 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                         titleTextView.setBackgroundResource(R.drawable.task_clicked);
                         mTaskDatabaseReference.child("completed").setValue(false);
                         mTaskDatabaseReference.child("completionDate").setValue(null);
-                        if(currentTask.getDueDate()!=null){
-                            dueDateTextView.setText("Due: "+sdf.format(currentTask.getDueDate()));
-                        }
-                        else{
-                            dueDateTextView.setText("Due: ");
-                        }
+                        dueDateTextView.setText(getDueOrCompletedDate(currentTask,dueDateTextView,Boolean.FALSE));
+
                         if(TaskActivity.tasksToShow!=SHOW_ALL_TASKS){
                             final Handler handler = new Handler();
                             handler.postDelayed(new Runnable() {
@@ -200,19 +199,31 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         }
     }
 
-    private String getDueOrCompletedDate(Task currentTask){
+    private String getDueOrCompletedDate(Task currentTask,TextView dueDateTextView, Boolean... currentlyCompleted){
+        Boolean currentlyComplete=null;
         String myFormat = "dd/MM/yyyy";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
+        if(currentlyCompleted!=null){
+            currentlyComplete=currentlyCompleted[0];
+        }
+
+        if(currentlyComplete!=null){
+            if(currentlyComplete==Boolean.TRUE){
+                dueDateTextView.setTextColor(Color.parseColor("#000000"));
+                dueDateTextView.setAlpha(0.54f);
+                return "Completed: "+sdf.format(calendar.getTime());
+            }
+            else{
+                return getDueDate(currentTask.getDueDate(),dueDateTextView);
+            }
+
+        }
         if(currentTask.getCompleted()){
+            dueDateTextView.setTextColor(ContextCompat.getColor(getContext(),R.color.black));
             return "Completed: "+sdf.format(currentTask.getCompletionDate());
         }
         else{
-            if(currentTask.getDueDate()!=null){
-                return "Due: "+sdf.format(currentTask.getDueDate());
-            }
-            else{
-                return "Due: ";
-            }
+            return getDueDate(currentTask.getDueDate(),dueDateTextView);
 
         }
     }
@@ -290,5 +301,31 @@ public class TaskAdapter extends ArrayAdapter<Task> {
 
         }
 
+    }
+    private String getDueDate(Date dueDate,TextView dueDateTextView){
+        if(dueDate!=null){
+            int dayDifference=
+                    ((int)((dueDate.getTime()/(24*60*60*1000))
+                            -(int)(calendar.getTime().getTime()/(24*60*60*1000))));
+            if(dayDifference>=0){
+                switch (dayDifference) {
+                    case 0:
+                        dueDateTextView.setTextColor(ContextCompat.getColor(getContext(),R.color.green));
+                        return "Due today";
+                    case 1:
+                        return "Due tomorrow";
+                    default:
+                        return String.format(Locale.getDefault(), "Due in %d days", dayDifference);
+                }
+            }
+            else{
+                 dueDateTextView.setTextColor(ContextCompat.getColor(getContext(),R.color.red));
+                return String.format(Locale.getDefault(), "Due %d days ago", -dayDifference);
+            }
+
+        }
+        else{
+            return "Due: ";
+        }
     }
 }
