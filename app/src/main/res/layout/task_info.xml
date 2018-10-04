@@ -110,7 +110,7 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="8dp"
             android:layout_marginStart="8dp"
-            android:text="Set reminder:"
+            android:text="Reminder:"
             android:textSize="21sp" />
 
         <EditText

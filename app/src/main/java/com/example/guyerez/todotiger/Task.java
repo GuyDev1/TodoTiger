@@ -29,10 +29,10 @@ public class Task {
     private Date mCompletionDate;
 
     /** The task's reminder date */
-    private String mReminderDate;
+    private Date mReminderDate;
 
     /** The task's reminder time */
-    private String mReminderTime;
+    private Date mReminderTime;
 
     /** The task's notes */
     private String mNotes;
@@ -117,14 +117,14 @@ public class Task {
     /**
      * Sets the task's reminder date.
      */
-    public void setReminderDate(String reminderDate) {
+    public void setReminderDate(Date reminderDate) {
         mReminderDate=reminderDate;
     }
 
     /**
      * Sets the task's reminder time.
      */
-    public void setReminderTime(String reminderTime) {
+    public void setReminderTime(Date reminderTime) {
         mReminderTime=reminderTime;
     }
 
@@ -188,14 +188,14 @@ public class Task {
     /**
      * Returns the task's reminder date.
      */
-    public String getReminderDate() {
+    public Date getReminderDate() {
         return mReminderDate;
     }
 
     /**
      * Returns the task's reminder time.
      */
-    public String getReminderTime() {
+    public Date getReminderTime() {
         return mReminderTime;
     }
 

@@ -85,6 +85,8 @@ public class TaskInfoFragment extends Fragment {
         //Get SimpleDateFormat to format task's dates and Calendar instance:
         String myFormat = "dd/MM/yyyy";
         final SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
+        String myFormatTime = "HH:mm";
+        final SimpleDateFormat sdfTime = new SimpleDateFormat(myFormatTime, Locale.getDefault());
 
         // Initialize references to views
         mTaskTitle = rootView.findViewById(R.id.input_task_title);
@@ -96,8 +98,8 @@ public class TaskInfoFragment extends Fragment {
                 // Save edited task info
                 mTaskDatabaseReference.child("title").setValue(mTaskTitle.getText().toString());
                 mTaskDatabaseReference.child("dueDate").setValue(dueCalendar.getTime());
-                mTaskDatabaseReference.child("reminderDate").setValue(reminderDate.getText().toString());
-                mTaskDatabaseReference.child("reminderTime").setValue(reminderTime.getText().toString());
+                mTaskDatabaseReference.child("reminderDate").setValue(remindDateCalendar.getTime());
+                mTaskDatabaseReference.child("reminderTime").setValue(remindTimeCalendar.getTime());
                 mTaskDatabaseReference.child("notes").setValue(mTaskNotes.getText().toString());
 
                 //Check if user scheduled a reminder and if so - set a reminder
@@ -164,7 +166,9 @@ public class TaskInfoFragment extends Fragment {
         //Initialize ReminderDate related variables
         remindDateCalendar = Calendar.getInstance();
         reminderDate = (EditText) rootView.findViewById(R.id.remind_date_picker);
-        reminderDate.setText(currentTask.getReminderDate());
+        if(currentTask.getReminderDate()!=null){
+            reminderDate.setText(sdf.format(currentTask.getReminderDate()));
+        }
         dateReminder = new DatePickerDialog.OnDateSetListener() {
             //Set the DatePicker
 
@@ -184,15 +188,18 @@ public class TaskInfoFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 new DatePickerDialog(getActivity(), dateReminder, remindDateCalendar
-                        .get(Calendar.YEAR), dueCalendar.get(Calendar.MONTH),
-                        dueCalendar.get(Calendar.DAY_OF_MONTH)).show();
+                        .get(Calendar.YEAR), remindDateCalendar.get(Calendar.MONTH),
+                        remindDateCalendar.get(Calendar.DAY_OF_MONTH)).show();
             }
         });
 
         //Initialize ReminderTime related variables
         remindTimeCalendar = Calendar.getInstance();
         reminderTime = (EditText) rootView.findViewById(R.id.remind_time_picker);
-        reminderTime.setText(currentTask.getReminderTime());
+        if(currentTask.getReminderTime()!=null){
+
+            reminderTime.setText(sdfTime.format(currentTask.getReminderTime()));
+        }
         timeReminder = new TimePickerDialog.OnTimeSetListener() {
             @Override
             public void onTimeSet(TimePicker view, int hour, int min) {
@@ -296,7 +303,7 @@ public class TaskInfoFragment extends Fragment {
                 .setSmallIcon(R.drawable.fui_ic_googleg_color_24dp)
                 .setContentTitle("Reminder: "+title)
                 .setContentText("Go do it TIGER!")
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
                 // Set the intent that will fire when the user taps the notification
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true);
