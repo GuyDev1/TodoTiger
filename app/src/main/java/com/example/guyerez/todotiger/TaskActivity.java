@@ -432,9 +432,12 @@ public class TaskActivity extends AppCompatActivity {
         Task taskClicked = mTaskAdapter.getItem(info.position);
         switch (menuItem.getItemId()) {
             case 0:
-                //Delete the selected task
+                //Delete the selected task and cancel the reminder if it had one
                 mTaskDatabaseReference.child(taskClicked.getId()).removeValue();
                 mTaskAdapter.remove(taskClicked);
+                if(taskClicked.getReminderDate()!=null){
+                    TaskInfoFragment.cancelReminder(context,AlarmReceiver.class,taskClicked.getIntId());
+                }
                 Toast.makeText(this, "Task deleted!", Toast.LENGTH_LONG).show();
                 break;
 

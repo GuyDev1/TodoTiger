@@ -35,6 +35,7 @@ import com.google.firebase.database.FirebaseDatabase;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
 
 import static android.content.Context.ALARM_SERVICE;
@@ -68,6 +69,11 @@ public class TaskInfoFragment extends Fragment {
     private TimePickerDialog.OnTimeSetListener timeReminder;
     private Calendar remindTimeCalendar;
 
+    //Flags to indicate date changes - prevent bugs
+    private boolean dueFlag=false;
+    private boolean remindDateFlag=false;
+    private boolean remindTimeFlag=false;
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -97,15 +103,21 @@ public class TaskInfoFragment extends Fragment {
             public void onClick(View view) {
                 // Save edited task info
                 mTaskDatabaseReference.child("title").setValue(mTaskTitle.getText().toString());
-                mTaskDatabaseReference.child("dueDate").setValue(dueCalendar.getTime());
-                mTaskDatabaseReference.child("reminderDate").setValue(remindDateCalendar.getTime());
-                mTaskDatabaseReference.child("reminderTime").setValue(remindTimeCalendar.getTime());
+                if(dueFlag){
+                    mTaskDatabaseReference.child("dueDate").setValue(dueCalendar.getTime());
+                }
+                if(remindDateFlag) {
+                    mTaskDatabaseReference.child("reminderDate").setValue(remindDateCalendar.getTime());
+                }
+                if(remindTimeFlag){
+                    mTaskDatabaseReference.child("reminderTime").setValue(remindTimeCalendar.getTime());
+                }
                 mTaskDatabaseReference.child("notes").setValue(mTaskNotes.getText().toString());
 
                 //Check if user scheduled a reminder and if so - set a reminder
                 if(!reminderDate.getText().toString().equals("") && !reminderTime.getText().toString().equals(""))
                 {
-                    setReminder(getContext(),AlarmReceiver.class,remindDateCalendar,remindTimeCalendar,currentTask);
+                    setReminder(getContext(),AlarmReceiver.class,remindDateCalendar.getTime(),remindTimeCalendar.getTime(),currentTask);
                 }
 
                 //Recreate activity to update changes and go back to the TaskActivity
@@ -149,6 +161,7 @@ public class TaskInfoFragment extends Fragment {
                 dueCalendar.set(Calendar.MONTH, monthOfYear);
                 dueCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
                 updateDueDateLabel();
+                dueFlag=true;
             }
 
         };
@@ -179,6 +192,7 @@ public class TaskInfoFragment extends Fragment {
                 remindDateCalendar.set(Calendar.MONTH, monthOfYear);
                 remindDateCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
                 updateReminderDateLabel();
+                remindDateFlag=true;
             }
 
         };
@@ -206,6 +220,7 @@ public class TaskInfoFragment extends Fragment {
                 remindTimeCalendar.set(Calendar.HOUR_OF_DAY, hour);
                 remindTimeCalendar.set(Calendar.MINUTE, min);
                 updateReminderTimeLabel();
+                remindTimeFlag=true;
 
 
             }
@@ -255,15 +270,19 @@ public class TaskInfoFragment extends Fragment {
     public void setCurrentTask(Task task) {
         this.currentTask = task;
     }
-    public static void setReminder(Context context, Class<?> cls, Calendar remindDate, Calendar remindTime,Task task)
+    public static void setReminder(Context context, Class<?> cls, Date remindDate, Date remindTime, Task task)
     {
         //Set the remindCalendar
         Calendar remindCalendar=Calendar.getInstance();
-        remindCalendar.set(Calendar.YEAR,remindDate.get(Calendar.YEAR));
-        remindCalendar.set(Calendar.MONTH,remindDate.get(Calendar.MONTH));
-        remindCalendar.set(Calendar.DAY_OF_MONTH,remindDate.get(Calendar.DAY_OF_MONTH));
-        remindCalendar.set(Calendar.HOUR_OF_DAY,remindTime.get(Calendar.HOUR_OF_DAY));
-        remindCalendar.set(Calendar.MINUTE,remindTime.get(Calendar.MINUTE));
+        Calendar remindDateCal=Calendar.getInstance();
+        remindDateCal.setTime(remindDate);
+        Calendar remindTimeCal=Calendar.getInstance();
+        remindTimeCal.setTime(remindTime);
+        remindCalendar.set(Calendar.YEAR,remindDateCal.get(Calendar.YEAR));
+        remindCalendar.set(Calendar.MONTH,remindDateCal.get(Calendar.MONTH));
+        remindCalendar.set(Calendar.DAY_OF_MONTH,remindDateCal.get(Calendar.DAY_OF_MONTH));
+        remindCalendar.set(Calendar.HOUR_OF_DAY,remindTimeCal.get(Calendar.HOUR_OF_DAY));
+        remindCalendar.set(Calendar.MINUTE,remindTimeCal.get(Calendar.MINUTE));
         remindCalendar.set(Calendar.SECOND,0);
 
 
@@ -311,6 +330,24 @@ public class TaskInfoFragment extends Fragment {
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
         notificationManager.notify(taskIntId, mBuilder.build());
 
+    }
+
+    public static void cancelReminder(Context context,Class<?> cls,int taskIntId)
+    {
+        // Disable a receiver
+
+        ComponentName receiver = new ComponentName(context, cls);
+        PackageManager pm = context.getPackageManager();
+
+        pm.setComponentEnabledSetting(receiver,
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                PackageManager.DONT_KILL_APP);
+
+        Intent intent = new Intent(context, cls);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, taskIntId, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        AlarmManager am = (AlarmManager) context.getSystemService(ALARM_SERVICE);
+        am.cancel(pendingIntent);
+        pendingIntent.cancel();
     }
 }
 

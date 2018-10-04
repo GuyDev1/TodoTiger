@@ -148,6 +148,10 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                             dueDateTextView.setText(getDueOrCompletedDate(currentTask,dueDateTextView,Boolean.TRUE));
                             dueDateTextView.setVisibility(View.VISIBLE);
                         }
+                        //cancel reminder if it had one
+                        if(currentTask.getReminderDate()!=null){
+                            TaskInfoFragment.cancelReminder(getContext(),AlarmReceiver.class,currentTask.getIntId());
+                        }
 
                         //After a small delay for better animation effect
                         //Remove the task from current adapter if it's not in SHOW_ALL_TASKs
@@ -167,6 +171,13 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                         mTaskDatabaseReference.child("completed").setValue(false);
                         mTaskDatabaseReference.child("completionDate").setValue(null);
                         dueDateTextView.setText(getDueOrCompletedDate(currentTask,dueDateTextView,Boolean.FALSE));
+
+                        //Reset the reminder if it had any
+                        if(currentTask.getReminderDate()!=null && currentTask.getReminderTime()!=null){
+                            TaskInfoFragment.setReminder(getContext(),AlarmReceiver.class,currentTask.getReminderDate(),
+                                    currentTask.getReminderTime(),currentTask);
+                        }
+
 
                         if(TaskActivity.tasksToShow!=SHOW_ALL_TASKS){
                             final Handler handler = new Handler();
@@ -226,7 +237,8 @@ public class TaskAdapter extends ArrayAdapter<Task> {
 
         }
         if(currentTask.getCompleted()){
-            dueDateTextView.setTextColor(ContextCompat.getColor(getContext(),R.color.black));
+            dueDateTextView.setTextColor(Color.parseColor("#000000"));
+            dueDateTextView.setAlpha(0.54f);
             return "Completed: "+sdf.format(currentTask.getCompletionDate());
         }
         else{
@@ -341,6 +353,8 @@ public class TaskAdapter extends ArrayAdapter<Task> {
 
         }
         else{
+            dueDateTextView.setTextColor(Color.parseColor("#000000"));
+            dueDateTextView.setAlpha(0.54f);
             return "Due: ";
         }
     }
