@@ -1,8 +1,10 @@
 package com.example.guyerez.todotiger;
 
 import android.annotation.TargetApi;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
@@ -420,9 +422,10 @@ public class TaskActivity extends AppCompatActivity {
     public void onCreateContextMenu(ContextMenu menu,View v, ContextMenu.ContextMenuInfo menuInfo){
         if (v.getId() == R.id.task_list_view){
             AdapterView.AdapterContextMenuInfo info =(AdapterView.AdapterContextMenuInfo)menuInfo;
-            menu.add(0,0,0,"Delete");
-            menu.add(0,1,1,"info");
-            menu.add(0,2,2,"Move to");
+
+            menu.add(0,0,0,"info");
+            menu.add(0,1,1,"Move to");
+            menu.add(0,2,2,"Delete");
         }
     }
 
@@ -431,28 +434,24 @@ public class TaskActivity extends AppCompatActivity {
         AdapterView.AdapterContextMenuInfo info=(AdapterView.AdapterContextMenuInfo)menuItem.getMenuInfo();
         Task taskClicked = mTaskAdapter.getItem(info.position);
         switch (menuItem.getItemId()) {
-            case 0:
-                //Delete the selected task and cancel the reminder if it had one
-                mTaskDatabaseReference.child(taskClicked.getId()).removeValue();
-                mTaskAdapter.remove(taskClicked);
-                if(taskClicked.getReminderDate()!=null){
-                    TaskInfoFragment.cancelReminder(context,AlarmReceiver.class,taskClicked.getIntId());
-                }
-                Toast.makeText(this, "Task deleted!", Toast.LENGTH_LONG).show();
-                break;
 
-            case 1:
+            case 0:
                 //Open the TaskInfoFragment for this task
                 getTaskInfo(taskClicked);
                 break;
 
 
-            case 2:
+            case 1:
                 //Pop a dialog and allow the user to choose a TaskList to move the current task to
                 getTaskLists();
                 setTaskMoveDialog();
                 dialog.show();
                 moveTaskToSelectedList(taskClicked);
+                break;
+
+            case 2:
+                //Confirm delete and perform the task's deletion
+                confirmDeleteDialog(taskClicked);
                 break;
 
 
@@ -779,6 +778,34 @@ public class TaskActivity extends AppCompatActivity {
             }
         });
 
+    }
+
+    private void confirmDeleteDialog(final Task taskClicked){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        //Set the title
+        builder.setTitle("Delete this task?");
+        // Add the buttons
+        builder.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                //Delete the selected task and cancel the reminder if it had one
+                mTaskDatabaseReference.child(taskClicked.getId()).removeValue();
+                mTaskAdapter.remove(taskClicked);
+                if(taskClicked.getReminderDate()!=null){
+                    TaskInfoFragment.cancelReminder(context,AlarmReceiver.class,taskClicked.getIntId());
+                }
+                Toast.makeText(TaskActivity.this, "Task deleted!", Toast.LENGTH_LONG).show();
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // User cancelled the dialog
+                dialog.cancel();
+            }
+        });
+
+        // Create the AlertDialog
+        AlertDialog deleteDialog = builder.create();
+        deleteDialog.show();
     }
 
 
