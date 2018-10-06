@@ -40,6 +40,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
     //Define FireBase instance variables
     private DatabaseReference mTaskDatabaseReference;
     private FirebaseDatabase mFirebaseDatabase;
+    private DatabaseReference mAllTasksDatabaseReference;
 
     //Variables indicating which tasks to show in the ListView
     public static final int SHOW_ALL_TASKS = 0;
@@ -57,6 +58,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
 
     //Get a calendar instance for setting dates
     private Calendar calendar;
+
 
     /**
      * Create a new {@link TaskAdapter} object.
@@ -137,13 +139,18 @@ public class TaskAdapter extends ArrayAdapter<Task> {
             public void onCheckedChanged(CompoundButton buttonView,boolean isChecked) {
                 //Get the task DB reference to edit task completion status
                 mTaskDatabaseReference=mFirebaseDatabase.getReference()
-                        .child("users").child(MainActivity.getCurrentUserId())
+                        .child("users").child(MainActivity.getCurrentUserId()).child("TaskLists")
                         .child(MainActivity.getCurrentTaskListId()).child("tasks").child(currentTask.getId());
+                mAllTasksDatabaseReference=mFirebaseDatabase.getReference()
+                        .child("users").child(MainActivity.getCurrentUserId())
+                        .child("allTasks").child(currentTask.getId());
                     if (isChecked) {
                         Date completionDate =calendar.getTime();
                         titleTextView.setBackgroundResource(R.drawable.strike_through);
                         mTaskDatabaseReference.child("completed").setValue(true);
                         mTaskDatabaseReference.child("completionDate").setValue(completionDate);
+                        mAllTasksDatabaseReference.child("completed").setValue(true);
+                        mAllTasksDatabaseReference.child("completionDate").setValue(completionDate);
                         if(TaskActivity.showCompleted){
                             dueDateTextView.setText(getDueOrCompletedDate(currentTask,dueDateTextView,Boolean.TRUE));
                             dueDateTextView.setVisibility(View.VISIBLE);
@@ -170,12 +177,14 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                         titleTextView.setBackgroundResource(R.drawable.task_clicked);
                         mTaskDatabaseReference.child("completed").setValue(false);
                         mTaskDatabaseReference.child("completionDate").setValue(null);
+                        mAllTasksDatabaseReference.child("completed").setValue(false);
+                        mAllTasksDatabaseReference.child("completionDate").setValue(null);
                         dueDateTextView.setText(getDueOrCompletedDate(currentTask,dueDateTextView,Boolean.FALSE));
 
                         //Reset the reminder if it had any
                         if(currentTask.getReminderDate()!=null && currentTask.getReminderTime()!=null){
                             TaskInfoFragment.setReminder(getContext(),AlarmReceiver.class,currentTask.getReminderDate(),
-                                    currentTask.getReminderTime(),currentTask);
+                                    currentTask.getReminderTime(),currentTask,mAllTasksDatabaseReference);
                         }
 
 

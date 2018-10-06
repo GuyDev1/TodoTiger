@@ -98,6 +98,7 @@ public class TaskActivity extends AppCompatActivity {
     private DatabaseReference mTaskDatabaseReference2;
     private DatabaseReference mTaskListDatabaseReference;
     private DatabaseReference mTaskNumDatabaseReference2;
+    private DatabaseReference mAllTasksDatabaseReference;
 
     //Variables for moving Tasks from one TaskList to another
     private int taskCount2;
@@ -175,8 +176,11 @@ public class TaskActivity extends AppCompatActivity {
                 String taskId = mTaskDatabaseReference.push().getKey();
                 Task task = new Task
                         (mTaskEditText.getText().toString(),false,taskId,taskIdNumber,
-                                creationDate,null,null);
+                                MainActivity.getCurrentTaskListId(), creationDate,null,null);
                 mTaskDatabaseReference.child(taskId).setValue(task);
+
+                //Create a copy of that Task under "AllTasks" in DB
+                mAllTasksDatabaseReference.child(taskId).setValue(task);
 
                 //add that task to the list's task count
                 mTaskNumDatabaseReference.child("taskNum").setValue(taskCount+1);
@@ -223,18 +227,22 @@ public class TaskActivity extends AppCompatActivity {
         //Get reference for the task list that belongs to the logged in user and attach the database listener
         if(MainActivity.getCurrentUserId()!=null && MainActivity.getCurrentTaskListId()!=null){
             mTaskDatabaseReference=mFirebaseDatabase.getReference().child("users")
-                    .child(MainActivity.getCurrentUserId())
+                    .child(MainActivity.getCurrentUserId()).child("TaskLists")
                     .child(MainActivity.getCurrentTaskListId()).child("tasks");
+            mAllTasksDatabaseReference=mFirebaseDatabase.getReference().child("users")
+                    .child(MainActivity.getCurrentUserId())
+                    .child("allTasks");
             //Get a reference to check the number of tasks in the TaskList
             mTaskNumDatabaseReference=mFirebaseDatabase.getReference().child("users")
-                    .child(MainActivity.getCurrentUserId())
+                    .child(MainActivity.getCurrentUserId()).child("TaskLists")
                     .child(MainActivity.getCurrentTaskListId());
             //Get a reference to obtain the TaskList ListView for moving around tasks.
             mTaskListDatabaseReference=mFirebaseDatabase.getReference().child("users")
-                    .child(MainActivity.getCurrentUserId());
+                    .child(MainActivity.getCurrentUserId()).child("TaskLists");
             //Check if this user has Tasks if not - show EmptyStateTextView
             DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference().child("users")
-                    .child(MainActivity.getCurrentUserId()).child(MainActivity.getCurrentTaskListId());
+                    .child(MainActivity.getCurrentUserId()).child("TaskLists")
+                    .child(MainActivity.getCurrentTaskListId());
             rootRef.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot snapshot) {
@@ -739,14 +747,17 @@ public class TaskActivity extends AppCompatActivity {
                 currentTaskListId=currentTaskList.getId();
                 //Get references for that specific TaskList and the number of tasks in it
                 mTaskDatabaseReference2=mFirebaseDatabase.getReference().child("users")
-                        .child(MainActivity.getCurrentUserId())
+                        .child(MainActivity.getCurrentUserId()).child("TaskLists")
                         .child(currentTaskListId).child("tasks");
                 mTaskNumDatabaseReference2=mFirebaseDatabase.getReference().child("users")
-                        .child(MainActivity.getCurrentUserId())
+                        .child(MainActivity.getCurrentUserId()).child("TaskLists")
                         .child(currentTaskListId);
 
                 //Move the task inside the DB to another TaskList
                 moveTaskFireBase(mTaskDatabaseReference,mTaskDatabaseReference2,task.getId());
+                //Update the task's current TaskList ID
+                mTaskDatabaseReference2.child(task.getId()).child("taskListId").setValue(currentTaskListId);
+                mAllTasksDatabaseReference.child(task.getId()).child("taskListId").setValue(currentTaskListId);
 
                 //Set flag to true to avoid an infinite loop while updating the taskNum for that TaskList
                 flag=true;
@@ -789,6 +800,7 @@ public class TaskActivity extends AppCompatActivity {
             public void onClick(DialogInterface dialog, int id) {
                 //Delete the selected task and cancel the reminder if it had one
                 mTaskDatabaseReference.child(taskClicked.getId()).removeValue();
+                mAllTasksDatabaseReference.child(taskClicked.getId()).removeValue();
                 mTaskAdapter.remove(taskClicked);
                 if(taskClicked.getReminderDate()!=null){
                     TaskInfoFragment.cancelReminder(context,AlarmReceiver.class,taskClicked.getIntId());

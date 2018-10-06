@@ -19,6 +19,9 @@ public class Task {
     /** The task's sharedPreferences ID */
     private int mIntId;
 
+    /** The ID of the TaskList that the task belongs to */
+    private String mTaskListId;
+
     /** The task's creation date */
     private Date mCreationDate;
 
@@ -37,6 +40,9 @@ public class Task {
     /** The task's notes */
     private String mNotes;
 
+    /** Whether the reminder was displayed to the user */
+    private boolean mReminderDisplayed=false;
+
 
 
     public Task() {
@@ -54,11 +60,12 @@ public class Task {
      * @param notes is the task related notes
      */
 
-    public Task(String title, boolean completed, String id,int intId, Date creationDate,Date dueDate,String notes) {
+    public Task(String title, boolean completed, String id,int intId,String taskListId, Date creationDate,Date dueDate,String notes) {
         mTitle = title;
         mCompleted=completed;
         mId=id;
         mIntId=intId;
+        mTaskListId=taskListId;
         mCreationDate=creationDate;
         mDueDate=dueDate;
         mNotes=notes;
@@ -90,6 +97,13 @@ public class Task {
      */
     public void setIntId(int intId) {
         mIntId=intId;
+    }
+
+    /**
+     * Sets the task's TaskList ID.
+     */
+    public void setTaskListId(String taskListId) {
+        mTaskListId=taskListId;
     }
 
     /**
@@ -135,6 +149,13 @@ public class Task {
         mNotes=notes;
     }
 
+    /**
+     * Sets reminder display status.
+     */
+    public void setReminderDisplayed(boolean reminderDisplayed) {
+        mReminderDisplayed=reminderDisplayed;
+    }
+
 
     /**
      * Returns the task's title.
@@ -162,6 +183,13 @@ public class Task {
      */
     public int getIntId() {
         return mIntId;
+    }
+
+    /**
+     * Returns the task's TaskList ID.
+     */
+    public String getTaskListId() {
+        return mTaskListId;
     }
 
     /**
@@ -204,6 +232,13 @@ public class Task {
      */
     public String getNotes() {
         return mNotes;
+    }
+
+    /**
+     * Returns the reminder's display status
+     */
+    public boolean getReminderDisplayed() {
+        return mReminderDisplayed;
     }
 
 }

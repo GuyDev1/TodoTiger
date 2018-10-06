@@ -58,6 +58,7 @@ public class TaskInfoFragment extends Fragment {
     //FireBase DB references to change task info
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mTaskDatabaseReference;
+    private DatabaseReference mAllTasksDatabaseReference;
 
     //References for dueDatePicker
     private DatePickerDialog.OnDateSetListener dateDue;
@@ -75,6 +76,7 @@ public class TaskInfoFragment extends Fragment {
     private boolean remindTimeFlag=false;
 
 
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         //Inflate the layout for this fragment
@@ -83,10 +85,12 @@ public class TaskInfoFragment extends Fragment {
         // Initialize Firebase components
         mFirebaseDatabase = FirebaseDatabase.getInstance();
 
-        //set up Task DB reference
+        //set up Task DB references
         mTaskDatabaseReference = mFirebaseDatabase.getReference().child("users")
-                .child(MainActivity.getCurrentUserId())
+                .child(MainActivity.getCurrentUserId()).child("TaskLists")
                 .child(MainActivity.getCurrentTaskListId()).child("tasks").child(currentTask.getId());
+        mAllTasksDatabaseReference=mFirebaseDatabase.getReference().child("users")
+                .child(MainActivity.getCurrentUserId()).child("allTasks").child(currentTask.getId());
 
         //Get SimpleDateFormat to format task's dates and Calendar instance:
         String myFormat = "dd/MM/yyyy";
@@ -103,21 +107,27 @@ public class TaskInfoFragment extends Fragment {
             public void onClick(View view) {
                 // Save edited task info
                 mTaskDatabaseReference.child("title").setValue(mTaskTitle.getText().toString());
+                mAllTasksDatabaseReference.child("title").setValue(mTaskTitle.getText().toString());
                 if(dueFlag){
                     mTaskDatabaseReference.child("dueDate").setValue(dueCalendar.getTime());
+                    mAllTasksDatabaseReference.child("dueDate").setValue(dueCalendar.getTime());
                 }
                 if(remindDateFlag) {
                     mTaskDatabaseReference.child("reminderDate").setValue(remindDateCalendar.getTime());
+                    mAllTasksDatabaseReference.child("reminderDate").setValue(remindDateCalendar.getTime());
                 }
                 if(remindTimeFlag){
                     mTaskDatabaseReference.child("reminderTime").setValue(remindTimeCalendar.getTime());
+                    mAllTasksDatabaseReference.child("reminderTime").setValue(remindTimeCalendar.getTime());
                 }
                 mTaskDatabaseReference.child("notes").setValue(mTaskNotes.getText().toString());
+                mAllTasksDatabaseReference.child("notes").setValue(mTaskNotes.getText().toString());
 
                 //Check if user scheduled a reminder and if so - set a reminder
                 if(!reminderDate.getText().toString().equals("") && !reminderTime.getText().toString().equals(""))
                 {
-                    setReminder(getContext(),AlarmReceiver.class,remindDateCalendar.getTime(),remindTimeCalendar.getTime(),currentTask);
+                    setReminder(getContext(),AlarmReceiver.class,remindDateCalendar.getTime(),remindTimeCalendar.getTime()
+                            ,currentTask,mAllTasksDatabaseReference);
                 }
 
                 //Recreate activity to update changes and go back to the TaskActivity
@@ -270,7 +280,7 @@ public class TaskInfoFragment extends Fragment {
     public void setCurrentTask(Task task) {
         this.currentTask = task;
     }
-    public static void setReminder(Context context, Class<?> cls, Date remindDate, Date remindTime, Task task)
+    public static void setReminder(Context context, Class<?> cls, Date remindDate, Date remindTime, Task task, DatabaseReference ref)
     {
         //Set the remindCalendar
         Calendar remindCalendar=Calendar.getInstance();
@@ -295,10 +305,14 @@ public class TaskInfoFragment extends Fragment {
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                 PackageManager.DONT_KILL_APP);
 
+        //Set reminderDisplayed to false - this is a new reminder
+        ref.child("reminderDisplayed").setValue(false);
+
 
         Intent intent = new Intent(context, cls);
         intent.putExtra("taskTitle",task.getTitle());
         intent.putExtra("taskIntId",task.getIntId());
+        intent.putExtra("taskId",task.getId());
         PendingIntent pendingIntent = PendingIntent.getBroadcast(context, task.getIntId(), intent, PendingIntent.FLAG_UPDATE_CURRENT);
         AlarmManager am = (AlarmManager) context.getSystemService(ALARM_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
