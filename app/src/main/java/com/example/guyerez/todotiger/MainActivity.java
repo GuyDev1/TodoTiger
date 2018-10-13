@@ -52,8 +52,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String CHANNEL_ID = "123";
     final Context context = this;
     public static final int SIGN_IN = 1;
-    public static String currentTaskListId;
-    public static String currentUserId;
+    private String currentUserId;
     private TaskListAdapter mTaskListAdapter;
     //TextView that is displayed when the list is empty//
     private TextView mEmptyStateTextView;
@@ -204,6 +203,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // Create the dialog
                 final AlertDialog alertDialog = alertDialogBuilder.create();
+                alertDialog.getWindow().getAttributes().windowAnimations = R.style.DialogTheme;
 
                 // Enable create button when input is not empty
                 userInput.addTextChangedListener(new TextWatcher() {
@@ -238,8 +238,12 @@ public class MainActivity extends AppCompatActivity {
                 // Find the current task list that was clicked on
                 TaskList currentTaskList = mTaskListAdapter.getItem(position);
 
-                //get the current task list's ID
-                currentTaskListId=currentTaskList.getId();
+
+                //Update current TaskList in SharedPreferences
+                SharedPreferences pref = getApplicationContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = pref.edit();
+                editor.putString("currentTaskList", currentTaskList.getId());
+                editor.commit();
 
 
                 // Create a new intent to view the tasks in the chosen list
@@ -363,10 +367,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public static String getCurrentTaskListId() {
-        return currentTaskListId;
-    }
-    public static String getCurrentUserId() {
+    private String getCurrentUserId() {
         return currentUserId;
     }
 
@@ -379,7 +380,6 @@ public class MainActivity extends AppCompatActivity {
         if (v.getId() == R.id.task_list_view){
             AdapterView.AdapterContextMenuInfo info =(AdapterView.AdapterContextMenuInfo)menuInfo;
             menu.add(0,0,0,"Delete");
-            menu.add(0,1,1,"TEST");
         }
     }
 
@@ -394,29 +394,6 @@ public class MainActivity extends AppCompatActivity {
                 mTaskListAdapter.remove(taskListClicked);
                 Toast.makeText(this, "Task List deleted!", Toast.LENGTH_LONG).show();
                 break;
-
-            case 1:
-                // Create an explicit intent for an Activity in your app
-                Intent intent = new Intent(this, TaskActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
-
-                NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                        .setSmallIcon(R.drawable.fui_ic_mail_white_24dp)
-                        .setContentTitle("My notification")
-                        .setContentText("Hello World!")
-                        .setPriority(NotificationCompat.PRIORITY_HIGH)
-                        // Set the intent that will fire when the user taps the notification
-                        .setContentIntent(pendingIntent)
-                        .setAutoCancel(true);
-
-
-                //get the current task list's ID
-                currentTaskListId=taskListClicked.getId();
-                NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-
-                // notificationId is a unique int for each notification that you must define
-                notificationManager.notify(0, mBuilder.build());
 
             default:
                 break;

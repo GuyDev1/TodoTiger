@@ -24,6 +24,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 
+import android.view.Window;
 import android.widget.Adapter;
 import android.widget.AdapterView;
 
@@ -108,9 +109,14 @@ public class TaskActivity extends AppCompatActivity {
     private String currentTaskListId;
     private Dialog dialog;
 
+    //Variables for current user and current TaskList from SharedPreferences
+    private String currentUser;
+    private String thisTaskList;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         // Set the content of the activity to use the activity_main.xml layout file - the task lists
         setContentView(R.layout.task_activity);
 
@@ -123,6 +129,11 @@ public class TaskActivity extends AppCompatActivity {
         showCreated=settings.getBoolean("show_created_date",true);
         showDue=settings.getBoolean("show_due_date",true);
         showCompleted=settings.getBoolean("show_completed_date",true);
+
+        //Get current logged in user and the current TaskList from SharedPreferences
+        SharedPreferences currentData=context.getSharedPreferences("MyPref", Context.MODE_PRIVATE);
+         currentUser=currentData.getString("userId",null);
+         thisTaskList=currentData.getString("currentTaskList",null);
 
 
         //Set up to allow Up navigation to parent activity
@@ -176,7 +187,7 @@ public class TaskActivity extends AppCompatActivity {
                 String taskId = mTaskDatabaseReference.push().getKey();
                 Task task = new Task
                         (mTaskEditText.getText().toString(),false,taskId,taskIdNumber,
-                                MainActivity.getCurrentTaskListId(), creationDate,null,null);
+                                thisTaskList, creationDate,null,null);
                 mTaskDatabaseReference.child(taskId).setValue(task);
 
                 //Create a copy of that Task under "AllTasks" in DB
@@ -224,25 +235,24 @@ public class TaskActivity extends AppCompatActivity {
 
 
 
+
+
         //Get reference for the task list that belongs to the logged in user and attach the database listener
-        if(MainActivity.getCurrentUserId()!=null && MainActivity.getCurrentTaskListId()!=null){
+        if(currentUser!=null && thisTaskList!=null){
             mTaskDatabaseReference=mFirebaseDatabase.getReference().child("users")
-                    .child(MainActivity.getCurrentUserId()).child("TaskLists")
-                    .child(MainActivity.getCurrentTaskListId()).child("tasks");
+                    .child(currentUser).child("TaskLists").child(thisTaskList).child("tasks");
             mAllTasksDatabaseReference=mFirebaseDatabase.getReference().child("users")
-                    .child(MainActivity.getCurrentUserId())
-                    .child("allTasks");
+                    .child(currentUser).child("allTasks");
             //Get a reference to check the number of tasks in the TaskList
             mTaskNumDatabaseReference=mFirebaseDatabase.getReference().child("users")
-                    .child(MainActivity.getCurrentUserId()).child("TaskLists")
-                    .child(MainActivity.getCurrentTaskListId());
+                    .child(currentUser).child("TaskLists").child(thisTaskList);
             //Get a reference to obtain the TaskList ListView for moving around tasks.
             mTaskListDatabaseReference=mFirebaseDatabase.getReference().child("users")
-                    .child(MainActivity.getCurrentUserId()).child("TaskLists");
+                    .child(currentUser).child("TaskLists");
             //Check if this user has Tasks if not - show EmptyStateTextView
             DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference().child("users")
-                    .child(MainActivity.getCurrentUserId()).child("TaskLists")
-                    .child(MainActivity.getCurrentTaskListId());
+                    .child(currentUser).child("TaskLists")
+                    .child(thisTaskList);
             rootRef.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot snapshot) {
@@ -555,6 +565,7 @@ public class TaskActivity extends AppCompatActivity {
         TaskInfoFragment taskInfo = new TaskInfoFragment();
         taskInfo.setCurrentTask(currentTask);
         android.support.v4.app.FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.setCustomAnimations(R.anim.slide_in,0,0,R.anim.slide_out);
         // Replace whatever is in the fragment_container view with this fragment,
         // and add the transaction to the back stack
         transaction.replace(R.id.frag_container, taskInfo);
@@ -710,7 +721,7 @@ public class TaskActivity extends AppCompatActivity {
 
                 TaskList taskList = dataSnapshot.getValue(TaskList.class);
                 //Don't show current TaskList in the move-to ListView (you're already there)
-                if(!taskList.getId().equals(MainActivity.getCurrentTaskListId())) {
+                if(!taskList.getId().equals(thisTaskList)) {
                     mTaskListAdapter.add(taskList);
                 }
             }
@@ -729,6 +740,7 @@ public class TaskActivity extends AppCompatActivity {
         dialog = new Dialog(TaskActivity.this,R.style.CustomDialog);
         dialog.setContentView(R.layout.move_task_dialog);
         dialog.setTitle("Choose a TaskList");
+        dialog.getWindow().getAttributes().windowAnimations = R.style.DialogTheme;
         taskListsView= (ListView) dialog.findViewById(R.id.List);
         // Create an {@link TaskListAdapter}, whose data source is a list of {@link TaskList}s.
         mTaskListAdapter = new TaskListAdapter(this, taskLists);
@@ -747,10 +759,10 @@ public class TaskActivity extends AppCompatActivity {
                 currentTaskListId=currentTaskList.getId();
                 //Get references for that specific TaskList and the number of tasks in it
                 mTaskDatabaseReference2=mFirebaseDatabase.getReference().child("users")
-                        .child(MainActivity.getCurrentUserId()).child("TaskLists")
+                        .child(currentUser).child("TaskLists")
                         .child(currentTaskListId).child("tasks");
                 mTaskNumDatabaseReference2=mFirebaseDatabase.getReference().child("users")
-                        .child(MainActivity.getCurrentUserId()).child("TaskLists")
+                        .child(currentUser).child("TaskLists")
                         .child(currentTaskListId);
 
                 //Move the task inside the DB to another TaskList
@@ -817,6 +829,7 @@ public class TaskActivity extends AppCompatActivity {
 
         // Create the AlertDialog
         AlertDialog deleteDialog = builder.create();
+        deleteDialog.getWindow().getAttributes().windowAnimations = R.style.DialogTheme;
         deleteDialog.show();
     }
 

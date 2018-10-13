@@ -58,6 +58,8 @@ public class TaskAdapter extends ArrayAdapter<Task> {
 
     //Get a calendar instance for setting dates
     private Calendar calendar;
+    private String currentUser;
+    private String thisTaskList;
 
 
     /**
@@ -89,6 +91,11 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         String myFormat = "dd/MM/yyyy";
         final SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
         calendar=Calendar.getInstance();
+
+        //Get current logged in user and the current TaskList from SharedPreferences
+        SharedPreferences currentData=getContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
+        currentUser=currentData.getString("userId",null);
+        thisTaskList=currentData.getString("currentTaskList",null);
 
         // Locate the TextView in the task_item.xml layout with the ID task_title.
         final TextView titleTextView = (TextView) listItemView.findViewById(R.id.task_title);
@@ -139,10 +146,10 @@ public class TaskAdapter extends ArrayAdapter<Task> {
             public void onCheckedChanged(CompoundButton buttonView,boolean isChecked) {
                 //Get the task DB reference to edit task completion status
                 mTaskDatabaseReference=mFirebaseDatabase.getReference()
-                        .child("users").child(MainActivity.getCurrentUserId()).child("TaskLists")
-                        .child(MainActivity.getCurrentTaskListId()).child("tasks").child(currentTask.getId());
+                        .child("users").child(currentUser).child("TaskLists")
+                        .child(thisTaskList).child("tasks").child(currentTask.getId());
                 mAllTasksDatabaseReference=mFirebaseDatabase.getReference()
-                        .child("users").child(MainActivity.getCurrentUserId())
+                        .child("users").child(currentUser)
                         .child("allTasks").child(currentTask.getId());
                     if (isChecked) {
                         Date completionDate =calendar.getTime();

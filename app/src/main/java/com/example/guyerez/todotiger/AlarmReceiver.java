@@ -47,12 +47,20 @@ public class AlarmReceiver extends BroadcastReceiver  {
             Bundle extras = intent.getExtras();
             String taskTitle = "Error, no task title!";
             int taskIntId=-1;
+            String currentTaskListId=null;
             if (extras != null) {
                 taskTitle = extras.getString("taskTitle");
                 taskIntId=extras.getInt("taskIntId");
+                currentTaskListId=extras.getString("taskList");
+            }
+            if(currentTaskListId!=null){
+                //Update current TaskList in SharedPreferences
+                SharedPreferences.Editor editor = sp.edit();
+                editor.putString("currentTaskList", currentTaskListId);
+                editor.commit();
             }
 
-            TaskInfoFragment.showReminderNotification(context, MainActivity.class, taskTitle,taskIntId);
+            TaskInfoFragment.showReminderNotification(context, TaskActivity.class, taskTitle,taskIntId);
             //Set the task's reminderDisplayed to true - the user presumably saw the reminder
             String taskId=extras.getString("taskId");
             mTaskDatabaseReference.child(taskId).child("reminderDisplayed").setValue(true);

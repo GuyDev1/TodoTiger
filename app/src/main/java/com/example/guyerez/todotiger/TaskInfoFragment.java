@@ -10,6 +10,7 @@ import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -74,7 +75,8 @@ public class TaskInfoFragment extends Fragment {
     private boolean dueFlag=false;
     private boolean remindDateFlag=false;
     private boolean remindTimeFlag=false;
-
+    private String currentUser;
+    private String thisTaskList;
 
 
     @Override
@@ -85,12 +87,17 @@ public class TaskInfoFragment extends Fragment {
         // Initialize Firebase components
         mFirebaseDatabase = FirebaseDatabase.getInstance();
 
+        //Get current logged in user and the current TaskList from SharedPreferences
+        SharedPreferences currentData=getContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
+        currentUser=currentData.getString("userId",null);
+        thisTaskList=currentData.getString("currentTaskList",null);
+
         //set up Task DB references
         mTaskDatabaseReference = mFirebaseDatabase.getReference().child("users")
-                .child(MainActivity.getCurrentUserId()).child("TaskLists")
-                .child(MainActivity.getCurrentTaskListId()).child("tasks").child(currentTask.getId());
+                .child(currentUser).child("TaskLists")
+                .child(thisTaskList).child("tasks").child(currentTask.getId());
         mAllTasksDatabaseReference=mFirebaseDatabase.getReference().child("users")
-                .child(MainActivity.getCurrentUserId()).child("allTasks").child(currentTask.getId());
+                .child(currentUser).child("allTasks").child(currentTask.getId());
 
         //Get SimpleDateFormat to format task's dates and Calendar instance:
         String myFormat = "dd/MM/yyyy";
@@ -313,6 +320,7 @@ public class TaskInfoFragment extends Fragment {
         intent.putExtra("taskTitle",task.getTitle());
         intent.putExtra("taskIntId",task.getIntId());
         intent.putExtra("taskId",task.getId());
+        intent.putExtra("taskList",task.getTaskListId());
         PendingIntent pendingIntent = PendingIntent.getBroadcast(context, task.getIntId(), intent, PendingIntent.FLAG_UPDATE_CURRENT);
         AlarmManager am = (AlarmManager) context.getSystemService(ALARM_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
