@@ -88,6 +88,11 @@ public class TaskActivity extends AppCompatActivity {
     public static final int TASKS_COMPLETED_WEEK = 7;
     public static final int TASKS_COMPLETED_MONTH = 8;
 
+    //Variables indicating priority
+    public static final int PRIORITY_DEFAULT = 0;
+    public static final int PRIORITY_HIGH = 1;
+    public static final int PRIORITY_URGENT = 2;
+
 
 
     // Firebase instance variables
@@ -187,7 +192,7 @@ public class TaskActivity extends AppCompatActivity {
                 String taskId = mTaskDatabaseReference.push().getKey();
                 Task task = new Task
                         (mTaskEditText.getText().toString(),false,taskId,taskIdNumber,
-                                thisTaskList, creationDate,null,null);
+                                thisTaskList, creationDate,null,null,PRIORITY_DEFAULT);
                 mTaskDatabaseReference.child(taskId).setValue(task);
 
                 //Create a copy of that Task under "AllTasks" in DB

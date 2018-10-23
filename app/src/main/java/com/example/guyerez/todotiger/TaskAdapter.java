@@ -16,6 +16,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.firebase.database.DatabaseReference;
@@ -133,6 +134,9 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         if(!TaskActivity.showDue){
             dueDateTextView.setVisibility(View.GONE);
         }
+
+        ImageView priorityImage=listItemView.findViewById(R.id.imageView);
+        priorityImage.setImageResource(R.mipmap.ic_launcher_round);
 
 
         // Initialize Firebase DB

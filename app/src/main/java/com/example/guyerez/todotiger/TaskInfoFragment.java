@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.BitmapFactory;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
@@ -25,10 +26,12 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.Spinner;
 import android.widget.TimePicker;
 
 import com.google.firebase.database.DatabaseReference;
@@ -55,6 +58,7 @@ public class TaskInfoFragment extends Fragment {
     private EditText mTaskNotes;
     private Button mSaveChangesButton;
     private Button mCancelButton;
+    private int priority;
 
     //FireBase DB references to change task info
     private FirebaseDatabase mFirebaseDatabase;
@@ -81,6 +85,9 @@ public class TaskInfoFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        if(currentTask==null){
+            getActivity().onBackPressed();
+        }
         //Inflate the layout for this fragment
         final View rootView = inflater.inflate(R.layout.task_info, container, false);
 
@@ -108,6 +115,17 @@ public class TaskInfoFragment extends Fragment {
         // Initialize references to views
         mTaskTitle = rootView.findViewById(R.id.input_task_title);
         mTaskTitle.setText(currentTask.getTitle());
+         final Spinner spinner = (Spinner)rootView.findViewById(R.id.spinner);
+        Integer[] integers=new Integer[]{R.mipmap.ic_launcher, R.mipmap.ic_launcher_foreground};
+        String[] strings=new String[]{"background1","background2"};
+        SpinnerImageAdapter adapter=new SpinnerImageAdapter(getContext(),integers,strings);
+        spinner.setAdapter(adapter);
+        //Set current task's priority
+        if(currentTask.getPriority()!=0){
+            int position=adapter.getPosition(currentTask.getPriority());
+            spinner.setSelection(position);
+        }
+
         mSaveChangesButton = rootView.findViewById(R.id.save_button);
         mSaveChangesButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -136,6 +154,9 @@ public class TaskInfoFragment extends Fragment {
                     setReminder(getContext(),AlarmReceiver.class,remindDateCalendar.getTime(),remindTimeCalendar.getTime()
                             ,currentTask,mAllTasksDatabaseReference);
                 }
+                priority=(int)spinner.getSelectedItem();
+                mTaskDatabaseReference.child("priority").setValue(priority);
+                mAllTasksDatabaseReference.child("priority").setValue(priority);
 
                 //Recreate activity to update changes and go back to the TaskActivity
                 getActivity().recreate();
@@ -341,7 +362,9 @@ public class TaskInfoFragment extends Fragment {
 
 
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context,"123")
-                .setSmallIcon(R.drawable.fui_ic_googleg_color_24dp)
+                .setSmallIcon(R.drawable.ic_stat_name)
+                .setLargeIcon(BitmapFactory.decodeResource(context.getResources(),
+                        R.mipmap.ic_launcher_foreground))
                 .setContentTitle("Reminder: "+title)
                 .setContentText("Go do it TIGER!")
                 .setPriority(NotificationCompat.PRIORITY_HIGH)

@@ -43,6 +43,8 @@ public class Task {
     /** Whether the reminder was displayed to the user */
     private boolean mReminderDisplayed=false;
 
+    private int mPriority;
+
 
 
     public Task() {
@@ -58,9 +60,10 @@ public class Task {
      * @param creationDate is the task's creation date
      * @param dueDate is the task's due date
      * @param notes is the task related notes
+     * @param priority is the task's priority
      */
 
-    public Task(String title, boolean completed, String id,int intId,String taskListId, Date creationDate,Date dueDate,String notes) {
+    public Task(String title, boolean completed, String id,int intId,String taskListId, Date creationDate,Date dueDate,String notes,int priority) {
         mTitle = title;
         mCompleted=completed;
         mId=id;
@@ -69,6 +72,7 @@ public class Task {
         mCreationDate=creationDate;
         mDueDate=dueDate;
         mNotes=notes;
+        mPriority=priority;
     }
 
     /**
@@ -156,6 +160,13 @@ public class Task {
         mReminderDisplayed=reminderDisplayed;
     }
 
+    /**
+     * Sets the task's priority.
+     */
+    public void setPriority(int priority) {
+        mPriority=priority;
+    }
+
 
     /**
      * Returns the task's title.
@@ -239,6 +250,13 @@ public class Task {
      */
     public boolean getReminderDisplayed() {
         return mReminderDisplayed;
+    }
+
+    /**
+     * Returns the reminder's display status
+     */
+    public int getPriority() {
+        return mPriority;
     }
 
 }

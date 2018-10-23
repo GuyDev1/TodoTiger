@@ -153,6 +153,38 @@
         app:layout_constraintTop_toBottomOf="@+id/linearLayout4">
 
         <TextView
+            android:id="@+id/priority"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Priority:"
+            android:layout_marginLeft="8dp"
+            android:layout_marginStart="8dp"
+            android:textSize="21dp"
+            tools:layout_editor_absoluteX="0dp"
+            tools:layout_editor_absoluteY="287dp" />
+
+        <Spinner
+            android:id="@+id/spinner"
+            android:layout_width="200dp"
+            android:layout_marginLeft="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_height="wrap_content"
+            tools:layout_editor_absoluteX="92dp"
+            tools:layout_editor_absoluteY="287dp" />
+
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/linearLayout6"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="22dp"
+        android:orientation="horizontal"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout5">
+
+        <TextView
             android:id="@+id/notes_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -171,6 +203,7 @@
             android:inputType="textMultiLine" />
 
     </LinearLayout>
+
 
 
 </android.support.constraint.ConstraintLayout>
