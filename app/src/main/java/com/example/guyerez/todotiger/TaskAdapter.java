@@ -1,5 +1,6 @@
 package com.example.guyerez.todotiger;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -8,15 +9,21 @@ import android.icu.util.DateInterval;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.view.menu.MenuBuilder;
+import android.support.v7.view.menu.MenuPopupHelper;
+import android.support.v7.widget.PopupMenu;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.google.firebase.database.DatabaseReference;
@@ -31,6 +38,9 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.Locale;
 
+import static com.example.guyerez.todotiger.TaskActivity.PRIORITY_URGENT;
+import static com.example.guyerez.todotiger.TaskActivity.PRIORITY_HIGH;
+import static com.example.guyerez.todotiger.TaskActivity.PRIORITY_DEFAULT;
 /**
  * {@link TaskAdapter} is an {@link ArrayAdapter} that can provide the layout for each task item
  * based on a data source, which is a list of {@link Task} objects.
@@ -76,6 +86,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         this.mContext=context;
     }
 
+    @SuppressLint("RestrictedApi")
     @Override
     public View getView(int position, View convertView, final ViewGroup parent) {
         // Check if an existing view is being reused, otherwise inflate the view
@@ -94,7 +105,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         calendar=Calendar.getInstance();
 
         //Get current logged in user and the current TaskList from SharedPreferences
-        SharedPreferences currentData=getContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
+        final SharedPreferences currentData=getContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
         currentUser=currentData.getString("userId",null);
         thisTaskList=currentData.getString("currentTaskList",null);
 
@@ -134,9 +145,60 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         if(!TaskActivity.showDue){
             dueDateTextView.setVisibility(View.GONE);
         }
+;
 
-        ImageView priorityImage=listItemView.findViewById(R.id.imageView);
-        priorityImage.setImageResource(R.mipmap.ic_launcher_round);
+        final ImageView priorityImage=listItemView.findViewById(R.id.imageView);
+        priorityImage.setImageResource(getTaskPriorityImage(currentTask));
+        priorityImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                @SuppressLint("RestrictedApi") MenuBuilder menuBuilder =new MenuBuilder(getContext());
+                MenuInflater inflater = new MenuInflater(getContext());
+                inflater.inflate(R.menu.priority_menu, menuBuilder);
+                @SuppressLint("RestrictedApi") MenuPopupHelper optionsMenu = new MenuPopupHelper(getContext(), menuBuilder, view);
+                optionsMenu.setForceShowIcon(true);
+                //Get the task DB reference to edit task completion status
+                mTaskDatabaseReference=mFirebaseDatabase.getReference()
+                        .child("users").child(currentUser).child("TaskLists")
+                        .child(thisTaskList).child("tasks").child(currentTask.getId());
+                mAllTasksDatabaseReference=mFirebaseDatabase.getReference()
+                        .child("users").child(currentUser)
+                        .child("allTasks").child(currentTask.getId());
+
+// Set Item Click Listener
+                menuBuilder.setCallback(new MenuBuilder.Callback() {
+                    @Override
+                    public boolean onMenuItemSelected(MenuBuilder menu, MenuItem item) {
+                        switch (item.getItemId()) {
+                            case R.id.priority_urgent:
+                                mTaskDatabaseReference.child("priority").setValue(PRIORITY_URGENT);
+                                mAllTasksDatabaseReference.child("priority").setValue(PRIORITY_URGENT);
+                                currentTask.setPriority(PRIORITY_URGENT); //Update currentTask - keeping taskInfoFragment up to date
+                                priorityImage.setImageResource(R.mipmap.ic_launcher); //Updating the image to show instant change of priority
+                                return true;
+                            case R.id.priority_high:
+                                mTaskDatabaseReference.child("priority").setValue(PRIORITY_HIGH);
+                                mAllTasksDatabaseReference.child("priority").setValue(PRIORITY_HIGH);
+                                currentTask.setPriority(PRIORITY_HIGH); //Update currentTask - keeping taskInfoFragment up to date
+                                priorityImage.setImageResource(R.mipmap.ic_launcher_foreground); //Updating the image to show instant change of priority
+                                return true;
+                            case R.id.priority_default:
+                                mTaskDatabaseReference.child("priority").setValue(PRIORITY_DEFAULT);
+                                mAllTasksDatabaseReference.child("priority").setValue(PRIORITY_DEFAULT);
+                                currentTask.setPriority(PRIORITY_DEFAULT); //Update currentTask - keeping taskInfoFragment up to date
+                                return true;
+                            default:
+                                return false;
+                        }
+                    }
+
+                    @Override
+                    public void onMenuModeChange(MenuBuilder menu) {}
+                });
+
+                optionsMenu.show();
+            }
+        });
 
 
         // Initialize Firebase DB
@@ -377,5 +439,18 @@ public class TaskAdapter extends ArrayAdapter<Task> {
             dueDateTextView.setAlpha(0.54f);
             return "Due: ";
         }
+
+
+    }
+    public int getTaskPriorityImage(Task currentTask){
+        switch (currentTask.getPriority()){
+            case PRIORITY_URGENT:
+                return R.mipmap.ic_launcher_round;
+            case PRIORITY_HIGH:
+                return R.mipmap.ic_launcher_foreground;
+            default:
+                break;
+        }
+        return R.mipmap.ic_launcher; //Default priority icon
     }
 }

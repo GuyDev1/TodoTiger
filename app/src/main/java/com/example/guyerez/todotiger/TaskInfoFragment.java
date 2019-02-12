@@ -95,7 +95,7 @@ public class TaskInfoFragment extends Fragment {
         mFirebaseDatabase = FirebaseDatabase.getInstance();
 
         //Get current logged in user and the current TaskList from SharedPreferences
-        SharedPreferences currentData=getContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
+        final SharedPreferences currentData=getContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
         currentUser=currentData.getString("userId",null);
         thisTaskList=currentData.getString("currentTaskList",null);
 
@@ -107,7 +107,7 @@ public class TaskInfoFragment extends Fragment {
                 .child(currentUser).child("allTasks").child(currentTask.getId());
 
         //Get SimpleDateFormat to format task's dates and Calendar instance:
-        String myFormat = "dd/MM/yyyy";
+        final String myFormat = "dd/MM/yyyy";
         final SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
         String myFormatTime = "HH:mm";
         final SimpleDateFormat sdfTime = new SimpleDateFormat(myFormatTime, Locale.getDefault());
@@ -116,15 +116,27 @@ public class TaskInfoFragment extends Fragment {
         mTaskTitle = rootView.findViewById(R.id.input_task_title);
         mTaskTitle.setText(currentTask.getTitle());
          final Spinner spinner = (Spinner)rootView.findViewById(R.id.spinner);
-        Integer[] integers=new Integer[]{R.mipmap.ic_launcher, R.mipmap.ic_launcher_foreground};
-        String[] strings=new String[]{"background1","background2"};
-        SpinnerImageAdapter adapter=new SpinnerImageAdapter(getContext(),integers,strings);
+        Integer[] intResources=new Integer[]{R.mipmap.ic_launcher, R.mipmap.ic_launcher_foreground,R.mipmap.ic_launcher_foreground};
+        String[] priorities=new String[]{"Default","High","Urgent"};
+        SpinnerImageAdapter adapter=new SpinnerImageAdapter(getContext(),intResources,priorities);
         spinner.setAdapter(adapter);
         //Set current task's priority
-        if(currentTask.getPriority()!=0){
-            int position=adapter.getPosition(currentTask.getPriority());
+            int position=currentTask.getPriority();
             spinner.setSelection(position);
-        }
+
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
+        {
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id)
+            {
+                spinner.setSelection(position);
+
+                priority=position;
+            } // to close the onItemSelected
+            public void onNothingSelected(AdapterView<?> parent)
+            {
+
+            }
+        });
 
         mSaveChangesButton = rootView.findViewById(R.id.save_button);
         mSaveChangesButton.setOnClickListener(new View.OnClickListener() {
@@ -154,7 +166,6 @@ public class TaskInfoFragment extends Fragment {
                     setReminder(getContext(),AlarmReceiver.class,remindDateCalendar.getTime(),remindTimeCalendar.getTime()
                             ,currentTask,mAllTasksDatabaseReference);
                 }
-                priority=(int)spinner.getSelectedItem();
                 mTaskDatabaseReference.child("priority").setValue(priority);
                 mAllTasksDatabaseReference.child("priority").setValue(priority);
 
