@@ -19,6 +19,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.TextInputEditText;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.app.TaskStackBuilder;
@@ -32,10 +33,13 @@ import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.TimePicker;
 
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+
+import org.w3c.dom.Text;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -55,7 +59,7 @@ public class TaskInfoFragment extends Fragment {
     private EditText dueDate;
     private EditText reminderDate;
     private EditText reminderTime;
-    private EditText mTaskNotes;
+    private TextView mTaskNotes;
     private Button mSaveChangesButton;
     private Button mCancelButton;
     private int priority;
@@ -88,6 +92,8 @@ public class TaskInfoFragment extends Fragment {
         if(currentTask==null){
             getActivity().onBackPressed();
         }
+
+        getActivity().setTitle(currentTask.getTitle());
         //Inflate the layout for this fragment
         final View rootView = inflater.inflate(R.layout.task_info, container, false);
 
@@ -182,7 +188,6 @@ public class TaskInfoFragment extends Fragment {
             @Override
             public void onClick(View view) {
                 //Cancel changes and go back to task list
-                Log.d("clicked back!","clicked back");
                 FrameLayout frameLayout=getActivity().findViewById(R.id.frag_container);
                 frameLayout.setClickable(false);
                 getActivity().onBackPressed();
@@ -285,7 +290,19 @@ public class TaskInfoFragment extends Fragment {
             });
 
         mTaskNotes =rootView.findViewById(R.id.notes);
-        mTaskNotes.setText(currentTask.getNotes());
+        mTaskNotes.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick (View v){
+                NotesFragment notesFragment = new NotesFragment();
+                FragmentTransaction transaction = getChildFragmentManager().beginTransaction();
+                FrameLayout frameLayout = rootView.findViewById(R.id.notes_fragment);
+                frameLayout.setClickable(true);
+                transaction.addToBackStack(null);
+                transaction.add(R.id.notes_fragment, notesFragment).commit();
+
+            }
+        });
 
         return rootView;
 
@@ -404,6 +421,11 @@ public class TaskInfoFragment extends Fragment {
         AlarmManager am = (AlarmManager) context.getSystemService(ALARM_SERVICE);
         am.cancel(pendingIntent);
         pendingIntent.cancel();
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
     }
 }
 

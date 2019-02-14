@@ -10,9 +10,11 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
@@ -112,16 +114,17 @@ public class TaskActivity extends AppCompatActivity {
     private TaskListAdapter mTaskListAdapter;
     private ListView taskListsView;
     private String currentTaskListId;
+    private String currentTaskListTitle;
     private Dialog dialog;
 
     //Variables for current user and current TaskList from SharedPreferences
     private String currentUser;
     private String thisTaskList;
-
+    private String thisTaskListTitle;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        this.setTitle(thisTaskListTitle);
         // Set the content of the activity to use the activity_main.xml layout file - the task lists
         setContentView(R.layout.task_activity);
 
@@ -139,7 +142,7 @@ public class TaskActivity extends AppCompatActivity {
         SharedPreferences currentData=context.getSharedPreferences("MyPref", Context.MODE_PRIVATE);
          currentUser=currentData.getString("userId",null);
          thisTaskList=currentData.getString("currentTaskList",null);
-
+         thisTaskListTitle=currentData.getString("currentTaskListTitle","TIGER");
 
         //Set up to allow Up navigation to parent activity
         this.getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -306,6 +309,9 @@ public class TaskActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         attachDatabaseReadListener();
+        this.setTitle(thisTaskListTitle);
+
+
 
     }
     @Override
@@ -502,9 +508,18 @@ public class TaskActivity extends AppCompatActivity {
                 //Check if the call came from the TaskInfoFragment or the activity
                 Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.frag_container);
                 if(currentFragment!=null && currentFragment.isVisible()){
-                    FrameLayout frameLayout = findViewById(R.id.frag_container);
-                    frameLayout.setClickable(false);
-                    this.onBackPressed();
+                    if(NotesFragment.isAttached()){
+                        FrameLayout frameLayout = findViewById(R.id.frag_container);
+                        frameLayout.setClickable(true);
+                        this.onBackPressed();
+                    }
+                    else{
+                        FrameLayout frameLayout = findViewById(R.id.frag_container);
+                        frameLayout.setClickable(false);
+                        this.onBackPressed();
+                    }
+
+
                 }
                 else{
                     NavUtils.navigateUpFromSameTask(this);
@@ -677,11 +692,32 @@ public class TaskActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        //Make sure TaskInfoFragment that we just quit doesn't interrupt with ListView clicks
-        FrameLayout frameLayout = findViewById(R.id.frag_container);
-        frameLayout.setClickable(false);
-        super.onBackPressed();
-    }
+        if(NotesFragment.isAttached()) {
+            FragmentManager fm = getSupportFragmentManager();
+            for (Fragment frag : fm.getFragments()) {
+                if (frag.isVisible()) {
+                    FragmentManager childFm = frag.getChildFragmentManager();
+                    if (childFm.getBackStackEntryCount() > 0) {
+                        childFm.popBackStack();
+                        //setClickable to false to prevent inner fragment's frame from catching outer fragment clicks
+                        FrameLayout frameLayout = findViewById(R.id.notes_fragment);
+                        frameLayout.setClickable(false);
+                        return;
+                    }
+                }
+            }
+        }
+        else {
+            //setClickable to false to prevent clicks being caught by the fragment's frame while we're viewing the tasks
+            FrameLayout frameLayout = findViewById(R.id.frag_container);
+            frameLayout.setClickable(false);
+            this.setTitle(thisTaskListTitle); //Set the title to be the TaskList's title
+            super.onBackPressed();
+        }
+
+
+        }
+
 
     // "fromPath" and "toPath" are like directories in the DB - we move the task from one to the other.
     private void moveTaskFireBase(final DatabaseReference fromPath, final DatabaseReference toPath, final String key) {
@@ -762,6 +798,7 @@ public class TaskActivity extends AppCompatActivity {
 
                 //get the current task list's ID
                 currentTaskListId=currentTaskList.getId();
+
                 //Get references for that specific TaskList and the number of tasks in it
                 mTaskDatabaseReference2=mFirebaseDatabase.getReference().child("users")
                         .child(currentUser).child("TaskLists")

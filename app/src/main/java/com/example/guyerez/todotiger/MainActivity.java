@@ -243,6 +243,7 @@ public class MainActivity extends AppCompatActivity {
                 SharedPreferences pref = getApplicationContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = pref.edit();
                 editor.putString("currentTaskList", currentTaskList.getId());
+                editor.putString("currentTaskListTitle", currentTaskList.getTitle());
                 editor.commit();
 
 

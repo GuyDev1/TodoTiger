@@ -193,17 +193,22 @@
             android:text="Notes:"
             android:textSize="21sp" />
 
-        <EditText
+        <TextView
             android:id="@+id/notes"
             android:layout_width="280dp"
             android:layout_height="wrap_content"
             android:layout_marginLeft="8dp"
             android:layout_marginStart="8dp"
-            android:ems="10"
-            android:inputType="textMultiLine" />
+            android:text="Enter a note..."
+            android:textSize="21sp" />
 
     </LinearLayout>
 
 
-
+    <FrameLayout
+        android:id="@+id/notes_fragment"
+        android:layout_width="match_parent"
+        android:orientation="vertical"
+        android:layout_height="match_parent">
+    </FrameLayout>
 </android.support.constraint.ConstraintLayout>
