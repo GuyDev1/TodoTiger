@@ -163,8 +163,12 @@ public class TaskInfoFragment extends Fragment {
                     mTaskDatabaseReference.child("reminderTime").setValue(remindTimeCalendar.getTime());
                     mAllTasksDatabaseReference.child("reminderTime").setValue(remindTimeCalendar.getTime());
                 }
-                mTaskDatabaseReference.child("notes").setValue(mTaskNotes.getText().toString());
-                mAllTasksDatabaseReference.child("notes").setValue(mTaskNotes.getText().toString());
+                //check if the user wrote any notes
+                if(!mTaskNotes.getText().equals("Enter a note...")){
+                    mTaskDatabaseReference.child("notes").setValue(mTaskNotes.getText().toString());
+                    mAllTasksDatabaseReference.child("notes").setValue(mTaskNotes.getText().toString());
+                }
+
 
                 //Check if user scheduled a reminder and if so - set a reminder
                 if(!reminderDate.getText().toString().equals("") && !reminderTime.getText().toString().equals(""))
@@ -426,6 +430,10 @@ public class TaskInfoFragment extends Fragment {
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+    }
+
+    public void setNotesText(String text){
+     mTaskNotes.setText(text);
     }
 }
 
