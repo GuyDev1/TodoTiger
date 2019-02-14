@@ -39,8 +39,10 @@ public class NotesFragment extends Fragment{
         mSaveChangesButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //save notes and go back to TaskInfoFragment
-                taskInfoFragment.setNotesText(mNotes.getText().toString());
+                //save notes (if they're not empty) and go back to TaskInfoFragment
+                if(!mNotes.getText().toString().equals("")){
+                    taskInfoFragment.setNotesText(mNotes.getText().toString());
+                }
                 getActivity().onBackPressed();
             }
         });

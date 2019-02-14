@@ -294,12 +294,16 @@ public class TaskInfoFragment extends Fragment {
             });
 
         mTaskNotes =rootView.findViewById(R.id.notes);
+        if(currentTask.getNotes()!=null){
+            mTaskNotes.setText(currentTask.getNotes());
+        }
         mTaskNotes.setOnClickListener(new View.OnClickListener()
         {
             @Override
             public void onClick (View v){
                 NotesFragment notesFragment = new NotesFragment();
                 FragmentTransaction transaction = getChildFragmentManager().beginTransaction();
+                transaction.setCustomAnimations(R.anim.slide_in,0,0,R.anim.slide_out);
                 FrameLayout frameLayout = rootView.findViewById(R.id.notes_fragment);
                 frameLayout.setClickable(true);
                 transaction.addToBackStack(null);
