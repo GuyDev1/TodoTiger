@@ -2,5 +2,6 @@
     <string name="app_name">TodoTiger</string>
     <string name="channel_name">TaskChannel</string>
     <string name="channel_description">Channel for task notifications</string>
+    <string name="search_hint">"Search task..."</string>
 
 </resources>

@@ -294,6 +294,11 @@ public class MainActivity extends AppCompatActivity {
                 Intent settingsIntent = new Intent(this, SettingsActivity.class);
                 startActivity(settingsIntent);
                 return true;
+            case R.id.search:
+                // Create a new intent to enter the Search activity
+                Intent searchIntent = new Intent(MainActivity.this, SearchTask.class);
+                // Send the intent to launch a new activity
+                startActivity(searchIntent);
             default:
                 return super.onOptionsItemSelected(item);
         }

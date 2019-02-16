@@ -24,6 +24,13 @@
             android:configChanges="keyboardHidden|orientation|screenSize">
         </activity>
 
+        <activity android:name=".SearchTask"
+            android:parentActivityName=".MainActivity"
+            android:windowSoftInputMode="stateHidden"
+            android:configChanges="keyboardHidden|orientation|screenSize">
+        </activity>
+
+
         <receiver android:name=".AlarmReceiver"
             android:enabled="false">
             <intent-filter>

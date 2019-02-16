@@ -72,6 +72,9 @@ public class TaskAdapter extends ArrayAdapter<Task> {
     private String currentUser;
     private String thisTaskList;
 
+    //Current completion date
+    private Date completionDate;
+
 
     /**
      * Create a new {@link TaskAdapter} object.
@@ -131,7 +134,6 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         //Initialize the creation date TextView in the task_item.xml layout with the ID creation_date
         TextView creationDateTextView = (TextView) listItemView.findViewById(R.id.creation_date);
         //Get the task's creation date from the currentTask object and set it in the text view
-
         creationDateTextView.setText(getCreationDate(currentTask));
         if(!TaskActivity.showCreated){
             creationDateTextView.setVisibility(View.GONE);
@@ -218,7 +220,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                         .child("users").child(currentUser)
                         .child("allTasks").child(currentTask.getId());
                     if (isChecked) {
-                        Date completionDate =calendar.getTime();
+                        completionDate =calendar.getTime();
                         titleTextView.setBackgroundResource(R.drawable.strike_through);
                         mTaskDatabaseReference.child("completed").setValue(true);
                         mTaskDatabaseReference.child("completionDate").setValue(completionDate);
@@ -321,6 +323,10 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         if(currentTask.getCompleted()){
             dueDateTextView.setTextColor(Color.parseColor("#000000"));
             dueDateTextView.setAlpha(0.54f);
+            //If we completed the task through search, set the current date to prevent a NullPointerException
+            if(currentTask.getCompletionDate()==null){
+                return "Completed: "+sdf.format(completionDate);
+            }
             return "Completed: "+sdf.format(currentTask.getCompletionDate());
         }
         else{
@@ -332,6 +338,9 @@ public class TaskAdapter extends ArrayAdapter<Task> {
     @Override
     public void add(@Nullable Task object) {
         super.add(object);
+        if(SearchTask.SEARCH_ACTIVE){
+            return;
+        }
         //Sort the tasks according to relevant parameters
         this.sort(new Comparator<Task>() {
             @Override
