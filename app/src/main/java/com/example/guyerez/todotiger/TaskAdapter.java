@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.icu.util.DateInterval;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.view.menu.MenuBuilder;
@@ -75,6 +76,11 @@ public class TaskAdapter extends ArrayAdapter<Task> {
     //Current completion date
     private Date completionDate;
 
+    //Show created/due/completed on Task item UI
+    public static boolean showCreated;
+    public static boolean showDue;
+    public static boolean showCompleted;
+
 
     /**
      * Create a new {@link TaskAdapter} object.
@@ -87,6 +93,11 @@ public class TaskAdapter extends ArrayAdapter<Task> {
     public TaskAdapter(Context context, ArrayList<Task> tasks) {
         super(context, 0, tasks);
         this.mContext=context;
+        //Get Settings for Task UI preferences
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getContext());
+        showCreated=settings.getBoolean("show_created_date",true);
+        showDue=settings.getBoolean("show_due_date",true);
+        showCompleted=settings.getBoolean("show_completed_date",true);
     }
 
     @SuppressLint("RestrictedApi")
@@ -119,7 +130,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         //If the task is completed - title Strikethrough
         titleTextView.setBackgroundResource(strikeCompleted(currentTask.getCompleted()));
         //Set Title height to fit date TextView's appropriately
-        if(TaskActivity.showCreated || TaskActivity.showDue || TaskActivity.showCompleted){
+        if(showCreated || showDue || showCompleted){
             titleTextView.setHeight((int)TypedValue.applyDimension
                     (TypedValue.COMPLEX_UNIT_DIP, 59,
                             getContext().getResources().getDisplayMetrics()));
@@ -135,7 +146,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         TextView creationDateTextView = (TextView) listItemView.findViewById(R.id.creation_date);
         //Get the task's creation date from the currentTask object and set it in the text view
         creationDateTextView.setText(getCreationDate(currentTask));
-        if(!TaskActivity.showCreated){
+        if(!showCreated){
             creationDateTextView.setVisibility(View.GONE);
         }
 
@@ -144,10 +155,10 @@ public class TaskAdapter extends ArrayAdapter<Task> {
          final TextView dueDateTextView = (TextView) listItemView.findViewById(R.id.due_date);
         //Get the task's creation date from the currentTask object and set it in the text view
         dueDateTextView.setText(getDueOrCompletedDate(currentTask,dueDateTextView,null));
-        if(!TaskActivity.showDue){
+        if(!showDue){
             dueDateTextView.setVisibility(View.GONE);
         }
-;
+
 
         final ImageView priorityImage=listItemView.findViewById(R.id.imageView);
         priorityImage.setImageResource(getTaskPriorityImage(currentTask));
@@ -226,7 +237,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                         mTaskDatabaseReference.child("completionDate").setValue(completionDate);
                         mAllTasksDatabaseReference.child("completed").setValue(true);
                         mAllTasksDatabaseReference.child("completionDate").setValue(completionDate);
-                        if(TaskActivity.showCompleted){
+                        if(showCompleted){
                             dueDateTextView.setText(getDueOrCompletedDate(currentTask,dueDateTextView,Boolean.TRUE));
                             dueDateTextView.setVisibility(View.VISIBLE);
                         }

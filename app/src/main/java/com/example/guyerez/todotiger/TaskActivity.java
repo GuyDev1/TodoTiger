@@ -66,13 +66,7 @@ public class TaskActivity extends AppCompatActivity {
     private Button mTaskCreateButton;
     //Show completed tasks boolean
     public static int tasksToShow;
-
-    //Show created/due/completed on Task item UI
-    public static boolean showCreated;
-    public static boolean showDue;
-    public static boolean showCompleted;
-
-
+    
 
     //SharedPreferences instance
     private SharedPreferences sharedPref;
@@ -131,12 +125,6 @@ public class TaskActivity extends AppCompatActivity {
         //Get task preferences - which tasks to show - show all tasks by default
          sharedPref = this.getPreferences(Context.MODE_PRIVATE);
         tasksToShow=sharedPref.getInt("tasksToShow",SHOW_ALL_TASKS);
-
-        //Get Settings for Task UI preferences
-        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
-        showCreated=settings.getBoolean("show_created_date",true);
-        showDue=settings.getBoolean("show_due_date",true);
-        showCompleted=settings.getBoolean("show_completed_date",true);
 
         //Get current logged in user and the current TaskList from SharedPreferences
         SharedPreferences currentData=context.getSharedPreferences("MyPref", Context.MODE_PRIVATE);
