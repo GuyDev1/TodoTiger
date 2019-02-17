@@ -66,7 +66,7 @@ public class TaskActivity extends AppCompatActivity {
     private Button mTaskCreateButton;
     //Show completed tasks boolean
     public static int tasksToShow;
-    
+
 
     //SharedPreferences instance
     private SharedPreferences sharedPref;

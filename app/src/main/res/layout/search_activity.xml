@@ -45,7 +45,12 @@
 
 
     </LinearLayout>
-
+    <FrameLayout
+        android:id="@+id/frag_container"
+        android:layout_width="match_parent"
+        android:orientation="vertical"
+        android:layout_height="match_parent">
+    </FrameLayout>
 
     <!-- Empty view is only visible when the list has no items. -->
     <TextView

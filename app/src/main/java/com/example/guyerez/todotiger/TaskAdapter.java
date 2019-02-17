@@ -114,7 +114,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         final Task currentTask = getItem(position);
 
         //Get SimpleDateFormat to format task's dates and Calendar instance:
-        String myFormat = "dd/MM/yyyy";
+        final String myFormat = "dd/MM/yyyy";
         final SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
         calendar=Calendar.getInstance();
 
@@ -294,6 +294,9 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                 if(mContext instanceof TaskActivity){
                     //Use the TaskActivity getTaskInfo method to start TaskInfoFragment
                     ((TaskActivity)mContext).getTaskInfo(currentTask);
+                }
+                if(mContext instanceof SearchTask){
+                    ((SearchTask)mContext).getTaskInfo(currentTask);
                 }
 
             }
