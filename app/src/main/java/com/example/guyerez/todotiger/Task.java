@@ -7,6 +7,7 @@ import java.util.Date;
  */
 public class Task {
 
+
     /** The task's title */
     private String mTitle="";
 
@@ -21,6 +22,9 @@ public class Task {
 
     /** The ID of the TaskList that the task belongs to */
     private String mTaskListId;
+
+    /** The title of the TaskList that the task belongs to */
+    private String mTaskListTitle;
 
     /** The task's creation date */
     private Date mCreationDate;
@@ -63,12 +67,13 @@ public class Task {
      * @param priority is the task's priority
      */
 
-    public Task(String title, boolean completed, String id,int intId,String taskListId, Date creationDate,Date dueDate,String notes,int priority) {
+    public Task(String title, boolean completed, String id,int intId,String taskListId,String taskListTitle, Date creationDate,Date dueDate,String notes,int priority) {
         mTitle = title;
         mCompleted=completed;
         mId=id;
         mIntId=intId;
         mTaskListId=taskListId;
+        mTaskListTitle=taskListTitle;
         mCreationDate=creationDate;
         mDueDate=dueDate;
         mNotes=notes;
@@ -108,6 +113,13 @@ public class Task {
      */
     public void setTaskListId(String taskListId) {
         mTaskListId=taskListId;
+    }
+
+    /**
+     * Sets the task's TaskList ID.
+     */
+    public void setTaskListTitle(String taskListTitle) {
+        mTaskListTitle=taskListTitle;
     }
 
     /**
@@ -201,6 +213,13 @@ public class Task {
      */
     public String getTaskListId() {
         return mTaskListId;
+    }
+
+    /**
+     * Returns the task's TaskList ID.
+     */
+    public String getTaskListTitle() {
+        return mTaskListTitle;
     }
 
     /**

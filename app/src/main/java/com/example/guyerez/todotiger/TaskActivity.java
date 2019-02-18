@@ -183,7 +183,7 @@ public class TaskActivity extends AppCompatActivity {
                 String taskId = mTaskDatabaseReference.push().getKey();
                 Task task = new Task
                         (mTaskEditText.getText().toString(),false,taskId,taskIdNumber,
-                                thisTaskList, creationDate,null,null,PRIORITY_DEFAULT);
+                                thisTaskList,thisTaskListTitle, creationDate,null,null,PRIORITY_DEFAULT);
                 mTaskDatabaseReference.child(taskId).setValue(task);
 
                 //Create a copy of that Task under "AllTasks" in DB
@@ -784,9 +784,9 @@ public class TaskActivity extends AppCompatActivity {
                 // Find the current task list that was clicked on
                 TaskList currentTaskList = mTaskListAdapter.getItem(position);
 
-                //get the current task list's ID
+                //get the current task list's ID and title
                 currentTaskListId=currentTaskList.getId();
-
+                currentTaskListTitle=currentTaskList.getTitle();
                 //Get references for that specific TaskList and the number of tasks in it
                 mTaskDatabaseReference2=mFirebaseDatabase.getReference().child("users")
                         .child(currentUser).child("TaskLists")
@@ -797,9 +797,11 @@ public class TaskActivity extends AppCompatActivity {
 
                 //Move the task inside the DB to another TaskList
                 moveTaskFireBase(mTaskDatabaseReference,mTaskDatabaseReference2,task.getId());
-                //Update the task's current TaskList ID
+                //Update the task's current TaskList ID and title
                 mTaskDatabaseReference2.child(task.getId()).child("taskListId").setValue(currentTaskListId);
                 mAllTasksDatabaseReference.child(task.getId()).child("taskListId").setValue(currentTaskListId);
+                mTaskDatabaseReference2.child(task.getId()).child("taskListTitle").setValue(currentTaskListTitle);
+                mAllTasksDatabaseReference.child(task.getId()).child("taskListTitle").setValue(currentTaskListTitle);
 
                 //Set flag to true to avoid an infinite loop while updating the taskNum for that TaskList
                 flag=true;

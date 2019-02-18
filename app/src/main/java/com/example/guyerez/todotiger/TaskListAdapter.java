@@ -63,6 +63,9 @@ public class TaskListAdapter extends ArrayAdapter<TaskList> {
         this.sort(new Comparator<TaskList>() {
             @Override
             public int compare(TaskList o1, TaskList o2) {
+                if(o1==null || o2==null){
+                    return 0;
+                }
 
                 return o1.getCreationDate().compareTo(o2.getCreationDate());
             }

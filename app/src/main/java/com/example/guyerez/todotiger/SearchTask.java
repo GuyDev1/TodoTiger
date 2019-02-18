@@ -16,10 +16,12 @@ import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ExpandableListView;
 import android.widget.FrameLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -40,6 +42,7 @@ public class SearchTask extends AppCompatActivity {
 
     //The current TaskAdapter
     private TaskAdapter mTaskAdapter;
+    private ExpandableListAdapter adapter;
     // TextView that is displayed when the the search returned no results //
     private TextView mEmptyStateTextView;
     //The loading indicator //
@@ -57,6 +60,11 @@ public class SearchTask extends AppCompatActivity {
 
     //Indicate if Search is Active
     public static boolean SEARCH_ACTIVE;
+
+    // More efficient than HashMap for mapping integers to objects
+    private SparseArray<TaskGroup> taskGroups = new SparseArray<TaskGroup>();
+
+    private ExpandableListView listView;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -97,25 +105,28 @@ public class SearchTask extends AppCompatActivity {
 
             @Override
             public void afterTextChanged(Editable editable) {
+
                 if (!editable.toString().isEmpty()) {
                     showLoadingIndicator(true);
                     showEmptyStateView(false);
-                    mTaskAdapter.clear();
+                    taskGroups.clear();
+                    adapter.notifyDataSetChanged();
                     searchTask(editable.toString());
                 } else {
                     showEmptyStateView(false);
-                    mTaskAdapter.clear();
+                    taskGroups.clear();
+                    adapter.notifyDataSetChanged();
                 }
             }
         });
 
-        //Initialize task Array, ListView and Adapter.
-        final ArrayList<Task> tasks = new ArrayList<Task>();
-        // Create an {@link TaskAdapter}, whose data source is a list of {@link Task}s.
-        mTaskAdapter = new TaskAdapter(this, tasks);
-
-        // Locate the {@link ListView} object in the view hierarchy of the {@link Activity}.
-        ListView listView = (ListView) findViewById(R.id.search_task_list_view);
+//        //Initialize task Array, ListView and Adapter.
+//        final ArrayList<Task> tasks = new ArrayList<Task>();
+//        // Create an {@link TaskAdapter}, whose data source is a list of {@link Task}s.
+//        mTaskAdapter = new TaskAdapter(this, tasks);
+//
+//        // Locate the {@link ListView} object in the view hierarchy of the {@link Activity}.
+//        ListView listView = (ListView) findViewById(R.id.search_task_list_view);
 
         //Set the empty view
         mEmptyStateTextView = (TextView) findViewById(R.id.empty_view);
@@ -125,9 +136,18 @@ public class SearchTask extends AppCompatActivity {
         showLoadingIndicator(false);
 
 
-        // Make the {@link ListView} use the {@link TaskAdapter} defined above, so that the
-        // {@link ListView} will display list items for each {@link Task} in the list.
-        listView.setAdapter(mTaskAdapter);
+         listView = findViewById(R.id.expandable_list_view);
+         adapter = new ExpandableListAdapter(this,
+                taskGroups);
+        listView.setAdapter(adapter);
+        listView.setGroupIndicator(null);
+//        adapter.add(0,new TaskGroup("12345"));
+
+//        taskGroups.append(0,new TaskGroup("fff"));
+
+//        // Make the {@link ListView} use the {@link TaskAdapter} defined above, so that the
+//        // {@link ListView} will display list items for each {@link Task} in the list.
+//        listView.setAdapter(mTaskAdapter);
 
 
     }
@@ -142,7 +162,8 @@ public class SearchTask extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        mTaskAdapter.clear();
+        taskGroups.clear();
+        adapter.notifyDataSetChanged();
         SEARCH_ACTIVE = false;
     }
 
@@ -152,31 +173,20 @@ public class SearchTask extends AppCompatActivity {
         query.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                mTaskAdapter.clear();
+                taskGroups.clear();
+                adapter.notifyDataSetChanged();
                 if (dataSnapshot.hasChildren()) {
                     for (DataSnapshot ds : dataSnapshot.getChildren()) {
                         Task task = ds.getValue(Task.class);
-                        if (containsByWord(s, task.getTitle(), task.getNotes())) {
-                            Log.d("here", "onDataChange: ");
-                            mTaskAdapter.add(task);
+                        if(task.getTitle().contains(s) || (task.getNotes()!=null && task.getNotes().contains(s))){
+                            updateExpandableListView(task);
                         }
                     }
-                    Log.d("wat", "wat: ");
-                    Log.d("here", "onDataChange: " + mTaskAdapter.getCount());
-                    if (mTaskAdapter.getCount() != 0) {
+                    if (taskGroups.size() != 0) {
                         Log.d("here2", "onDataChange: ");
                         showEmptyStateView(false);
                         showLoadingIndicator(false);
                     }
-//                    if(containsWord){
-//                        showEmptyStateView(false);
-//                        mTaskAdapter.clear();
-//                        showLoadingIndicator(false);
-//                        for(DataSnapshot ds:dataSnapshot.getChildren()){
-//                            Task task=ds.getValue(Task.class);
-//                            mTaskAdapter.add(task);
-//                        }
-//                    }
                     else {
                         //Found no tasks, stop loading and alert the user.
                         showLoadingIndicator(false);
@@ -216,22 +226,6 @@ public class SearchTask extends AppCompatActivity {
         }
     }
 
-    //Split search string into words and check if any of the words contain the requested search query
-    private boolean containsByWord(String str, String title, String notes) {
-        String[] words = str.split(" ");
-        for (String word : words) {
-            Log.d("1", "containsByWord: " + Arrays.toString(words));
-            if (title.contains(str)) {
-                Log.d("1", "containsByWord: " + word + str);
-                return true;
-            }
-            if (notes != null && notes.contains(str)) {
-                return true;
-            }
-        }
-        Log.d("reached false", "containsByWord: ");
-        return false;
-    }
 
     public void getTaskInfo(Task currentTask) {
         //Open the TaskInfoFragment for this task
@@ -294,8 +288,42 @@ public class SearchTask extends AppCompatActivity {
             //setClickable to false to prevent clicks being caught by the fragment's frame while we're viewing the tasks
             FrameLayout frameLayout = findViewById(R.id.frag_container);
             frameLayout.setClickable(false);
+            this.setTitle("TodoTiger");
             super.onBackPressed();
         }
+    }
+
+    private void updateExpandableListView(Task currentTask){
+        String taskListTitle=currentTask.getTaskListTitle();
+        String taskListId=currentTask.getTaskListId();
+        int index=findTaskList(taskListTitle);
+        if(index==-1){
+            int position=taskGroups.size();
+            TaskGroup tg=new TaskGroup(taskListTitle,taskListId);
+            tg.tasks.add(currentTask);
+            taskGroups.append(position,tg);
+            adapter.notifyDataSetChanged();
+            listView.expandGroup(position);
+        }
+        else{
+            TaskGroup tg=taskGroups.get(index);
+            tg.tasks.add(currentTask);
+            adapter.notifyDataSetChanged();
+            listView.expandGroup(index);
+        }
+
+    }
+
+    //return the index of the requested taskList, if not found return -1
+    private int findTaskList(String taskListTitle){
+        for(int i=0;i<taskGroups.size();i++){
+            TaskGroup tg=taskGroups.get(i);
+            if(tg.taskListTitle.equals(taskListTitle)){
+                return i;
+            }
+        }
+        return -1;
+
     }
 
 
