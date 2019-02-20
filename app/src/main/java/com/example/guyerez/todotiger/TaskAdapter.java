@@ -158,7 +158,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         }
 
 
-        final ImageView priorityImage=listItemView.findViewById(R.id.imageView);
+        priorityImage=listItemView.findViewById(R.id.imageView);
         priorityImage.setImageResource(getTaskPriorityImage(currentTask));
         priorityImage.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -495,10 +495,10 @@ public class TaskAdapter extends ArrayAdapter<Task> {
 
     @SuppressLint("RestrictedApi")
     private void initPriorityMenu(View view) {
-        @SuppressLint("RestrictedApi") MenuBuilder menuBuilder =new MenuBuilder(getContext());
+        menuBuilder =new MenuBuilder(getContext());
         MenuInflater inflater = new MenuInflater(getContext());
         inflater.inflate(R.menu.priority_menu, menuBuilder);
-        @SuppressLint("RestrictedApi") MenuPopupHelper optionsMenu = new MenuPopupHelper(getContext(), menuBuilder, view);
+        optionsMenu = new MenuPopupHelper(getContext(), menuBuilder, view);
         optionsMenu.setForceShowIcon(true);
     }
 

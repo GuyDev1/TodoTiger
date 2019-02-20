@@ -561,10 +561,10 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 
     @SuppressLint("RestrictedApi")
     private void initPriorityMenu(View view) {
-        @SuppressLint("RestrictedApi") MenuBuilder menuBuilder =new MenuBuilder(activity);
+        menuBuilder =new MenuBuilder(activity);
         MenuInflater inflater = new MenuInflater(activity);
         inflater.inflate(R.menu.priority_menu, menuBuilder);
-        @SuppressLint("RestrictedApi") MenuPopupHelper optionsMenu = new MenuPopupHelper(activity, menuBuilder, view);
+        optionsMenu = new MenuPopupHelper(activity, menuBuilder, view);
         optionsMenu.setForceShowIcon(true);
     }
 
