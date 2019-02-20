@@ -81,6 +81,13 @@ public class TaskAdapter extends ArrayAdapter<Task> {
     public static boolean showDue;
     public static boolean showCompleted;
 
+    //Define task priority menu components
+    private MenuBuilder menuBuilder;
+    private MenuPopupHelper optionsMenu;
+
+    //Define relevant UI components
+    private ImageView priorityImage;
+
 
     /**
      * Create a new {@link TaskAdapter} object.
@@ -93,11 +100,12 @@ public class TaskAdapter extends ArrayAdapter<Task> {
     public TaskAdapter(Context context, ArrayList<Task> tasks) {
         super(context, 0, tasks);
         this.mContext=context;
-        //Get Settings for Task UI preferences
-        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getContext());
-        showCreated=settings.getBoolean("show_created_date",true);
-        showDue=settings.getBoolean("show_due_date",true);
-        showCompleted=settings.getBoolean("show_completed_date",true);
+        //Initialize sharedPreferences
+        initSharedPreferences();
+        //Initialize calendar for task's dates and for using the Calendar
+        initializeCalendar();
+        // Initialize Firebase DB
+        mFirebaseDatabase = FirebaseDatabase.getInstance();
     }
 
     @SuppressLint("RestrictedApi")
@@ -112,16 +120,6 @@ public class TaskAdapter extends ArrayAdapter<Task> {
 
         // Get the {@link Task} object located at this position in the list
         final Task currentTask = getItem(position);
-
-        //Get SimpleDateFormat to format task's dates and Calendar instance:
-        final String myFormat = "dd/MM/yyyy";
-        final SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
-        calendar=Calendar.getInstance();
-
-        //Get current logged in user and the current TaskList from SharedPreferences
-        final SharedPreferences currentData=getContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
-        currentUser=currentData.getString("userId",null);
-        thisTaskList=currentData.getString("currentTaskList",null);
 
         // Locate the TextView in the task_item.xml layout with the ID task_title.
         final TextView titleTextView = (TextView) listItemView.findViewById(R.id.task_title);
@@ -165,40 +163,24 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         priorityImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                @SuppressLint("RestrictedApi") MenuBuilder menuBuilder =new MenuBuilder(getContext());
-                MenuInflater inflater = new MenuInflater(getContext());
-                inflater.inflate(R.menu.priority_menu, menuBuilder);
-                @SuppressLint("RestrictedApi") MenuPopupHelper optionsMenu = new MenuPopupHelper(getContext(), menuBuilder, view);
-                optionsMenu.setForceShowIcon(true);
-                //Get the task DB reference to edit task completion status
-                mTaskDatabaseReference=mFirebaseDatabase.getReference()
-                        .child("users").child(currentUser).child("TaskLists")
-                        .child(thisTaskList).child("tasks").child(currentTask.getId());
-                mAllTasksDatabaseReference=mFirebaseDatabase.getReference()
-                        .child("users").child(currentUser)
-                        .child("allTasks").child(currentTask.getId());
+                initPriorityMenu(view);
 
-// Set Item Click Listener
+                //Init the task DB reference to edit task completion status
+                initDatabaseReferences(currentTask);
+
+                // Set Item Click Listener
                 menuBuilder.setCallback(new MenuBuilder.Callback() {
                     @Override
                     public boolean onMenuItemSelected(MenuBuilder menu, MenuItem item) {
                         switch (item.getItemId()) {
                             case R.id.priority_urgent:
-                                mTaskDatabaseReference.child("priority").setValue(PRIORITY_URGENT);
-                                mAllTasksDatabaseReference.child("priority").setValue(PRIORITY_URGENT);
-                                currentTask.setPriority(PRIORITY_URGENT); //Update currentTask - keeping taskInfoFragment up to date
-                                priorityImage.setImageResource(R.mipmap.ic_launcher); //Updating the image to show instant change of priority
+                                setPriority(PRIORITY_URGENT,currentTask);
                                 return true;
                             case R.id.priority_high:
-                                mTaskDatabaseReference.child("priority").setValue(PRIORITY_HIGH);
-                                mAllTasksDatabaseReference.child("priority").setValue(PRIORITY_HIGH);
-                                currentTask.setPriority(PRIORITY_HIGH); //Update currentTask - keeping taskInfoFragment up to date
-                                priorityImage.setImageResource(R.mipmap.ic_launcher_foreground); //Updating the image to show instant change of priority
+                                setPriority(PRIORITY_HIGH,currentTask);
                                 return true;
                             case R.id.priority_default:
-                                mTaskDatabaseReference.child("priority").setValue(PRIORITY_DEFAULT);
-                                mAllTasksDatabaseReference.child("priority").setValue(PRIORITY_DEFAULT);
-                                currentTask.setPriority(PRIORITY_DEFAULT); //Update currentTask - keeping taskInfoFragment up to date
+                                setPriority(PRIORITY_DEFAULT,currentTask);
                                 return true;
                             default:
                                 return false;
@@ -212,77 +194,35 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                 optionsMenu.show();
             }
         });
-
-
-        // Initialize Firebase DB
-        mFirebaseDatabase = FirebaseDatabase.getInstance();
-
-
+        
         // Find the CheckBox in the task_item.xml layout with the ID check_box.
 
         checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView,boolean isChecked) {
                 //Get the task DB reference to edit task completion status
-                mTaskDatabaseReference=mFirebaseDatabase.getReference()
-                        .child("users").child(currentUser).child("TaskLists")
-                        .child(thisTaskList).child("tasks").child(currentTask.getId());
-                mAllTasksDatabaseReference=mFirebaseDatabase.getReference()
-                        .child("users").child(currentUser)
-                        .child("allTasks").child(currentTask.getId());
+                initDatabaseReferences(currentTask);
                     if (isChecked) {
-                        completionDate =calendar.getTime();
-                        titleTextView.setBackgroundResource(R.drawable.strike_through);
-                        mTaskDatabaseReference.child("completed").setValue(true);
-                        mTaskDatabaseReference.child("completionDate").setValue(completionDate);
-                        mAllTasksDatabaseReference.child("completed").setValue(true);
-                        mAllTasksDatabaseReference.child("completionDate").setValue(completionDate);
-                        if(showCompleted){
-                            dueDateTextView.setText(getDueOrCompletedDate(currentTask,dueDateTextView,Boolean.TRUE));
-                            dueDateTextView.setVisibility(View.VISIBLE);
-                        }
-                        //cancel reminder if it had one
-                        if(currentTask.getReminderDate()!=null){
-                            TaskInfoFragment.cancelReminder(getContext(),AlarmReceiver.class,currentTask.getIntId());
-                        }
-
+                        //Update the Task as Checked (completed) in the DB and UI
+                        updateTaskChecked(titleTextView,dueDateTextView,currentTask);
+                        //cancel task's reminder if it had one, since it's completed
+                        cancelTaskReminder(currentTask);
                         //After a small delay for better animation effect
                         //Remove the task from current adapter if it's not in SHOW_ALL_TASKs
                         // Since the user completed the task
                         if(TaskActivity.tasksToShow!=SHOW_ALL_TASKS){
-                            final Handler handler = new Handler();
-                            handler.postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                        remove(currentTask);
-                                }}, 500);
+                            removeCompletedTaskAnim(currentTask);
                         }
-
 
                     } else {
-                        titleTextView.setBackgroundResource(R.drawable.task_clicked);
-                        mTaskDatabaseReference.child("completed").setValue(false);
-                        mTaskDatabaseReference.child("completionDate").setValue(null);
-                        mAllTasksDatabaseReference.child("completed").setValue(false);
-                        mAllTasksDatabaseReference.child("completionDate").setValue(null);
-                        dueDateTextView.setText(getDueOrCompletedDate(currentTask,dueDateTextView,Boolean.FALSE));
-
+                        //Update the Task as unChecked (not completed) in the DB and UI
+                        updateTaskUnchecked(titleTextView,dueDateTextView,currentTask);
                         //Reset the reminder if it had any
-                        if(currentTask.getReminderDate()!=null && currentTask.getReminderTime()!=null){
-                            TaskInfoFragment.setReminder(getContext(),AlarmReceiver.class,currentTask.getReminderDate(),
-                                    currentTask.getReminderTime(),currentTask,mAllTasksDatabaseReference);
-                        }
-
-
+                        resetTaskReminder(currentTask);
+                        //If we're not in ALL_TASKS, we must be in SHOW_COMPLETED if we can un-complete the task
                         if(TaskActivity.tasksToShow!=SHOW_ALL_TASKS){
-                            final Handler handler = new Handler();
-                            handler.postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    remove(currentTask);
-                                }}, 500);
+                            removeCompletedTaskAnim(currentTask);
                         }
-
                     }
             }
             }
@@ -475,5 +415,113 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                 break;
         }
         return R.mipmap.ic_launcher; //Default priority icon
+    }
+
+    private void initDatabaseReferences(Task task){
+        mTaskDatabaseReference=mFirebaseDatabase.getReference()
+                .child("users").child(currentUser).child("TaskLists")
+                .child(task.getTaskListId()).child("tasks").child(task.getId());
+        mAllTasksDatabaseReference=mFirebaseDatabase.getReference()
+                .child("users").child(currentUser)
+                .child("allTasks").child(task.getId());
+    }
+
+    private void updateTaskChecked(TextView title,TextView dueDateTextView,Task task) {
+        completionDate =calendar.getTime();
+        title.setBackgroundResource(R.drawable.strike_through);
+        mTaskDatabaseReference.child("completed").setValue(true);
+        mTaskDatabaseReference.child("completionDate").setValue(completionDate);
+        mAllTasksDatabaseReference.child("completed").setValue(true);
+        mAllTasksDatabaseReference.child("completionDate").setValue(completionDate);
+        if(showCompleted){
+            dueDateTextView.setText(getDueOrCompletedDate(task,dueDateTextView,Boolean.TRUE));
+            dueDateTextView.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void cancelTaskReminder(Task task) {
+        if(task.getReminderDate()!=null){
+            TaskInfoFragment.cancelReminder(getContext(),AlarmReceiver.class,task.getIntId());
+        }
+    }
+
+    //After a small delay for better animation effect
+    //Remove the task from current adapter if it's not in SHOW_ALL_TASKs
+    // Since the user completed the task or un-completed the task and is in SHOW_COMPLETED
+    private void removeCompletedTaskAnim(final Task currentTask){
+            final Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    remove(currentTask);
+                }}, 500);
+
+    }
+
+    private void updateTaskUnchecked(TextView title, TextView dueDateTextView, Task task) {
+        title.setBackgroundResource(R.drawable.task_clicked);
+        mTaskDatabaseReference.child("completed").setValue(false);
+        mTaskDatabaseReference.child("completionDate").setValue(null);
+        mAllTasksDatabaseReference.child("completed").setValue(false);
+        mAllTasksDatabaseReference.child("completionDate").setValue(null);
+        dueDateTextView.setText(getDueOrCompletedDate(task,dueDateTextView,Boolean.FALSE));
+    }
+
+    private void resetTaskReminder(Task task) {
+        if(task.getReminderDate()!=null && task.getReminderTime()!=null){
+            TaskInfoFragment.setReminder(getContext(),AlarmReceiver.class,task.getReminderDate(),
+                    task.getReminderTime(),task,mAllTasksDatabaseReference);
+        }
+    }
+
+    private void initSharedPreferences(){
+        //Get Settings for Task UI preferences
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getContext());
+        showCreated=settings.getBoolean("show_created_date",true);
+        showDue=settings.getBoolean("show_due_date",true);
+        showCompleted=settings.getBoolean("show_completed_date",true);
+        //Get current logged in user and the current TaskList from SharedPreferences
+        final SharedPreferences currentData=getContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
+        currentUser=currentData.getString("userId",null);
+        thisTaskList=currentData.getString("currentTaskList",null);
+    }
+
+    private void initializeCalendar() {
+        //Get SimpleDateFormat to format task's dates and Calendar instance:
+        final String myFormat = "dd/MM/yyyy";
+        final SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
+        calendar=Calendar.getInstance();
+    }
+
+    @SuppressLint("RestrictedApi")
+    private void initPriorityMenu(View view) {
+        @SuppressLint("RestrictedApi") MenuBuilder menuBuilder =new MenuBuilder(getContext());
+        MenuInflater inflater = new MenuInflater(getContext());
+        inflater.inflate(R.menu.priority_menu, menuBuilder);
+        @SuppressLint("RestrictedApi") MenuPopupHelper optionsMenu = new MenuPopupHelper(getContext(), menuBuilder, view);
+        optionsMenu.setForceShowIcon(true);
+    }
+
+    private void setPriority(int priorityLevel,Task task) {
+        mTaskDatabaseReference.child("priority").setValue(priorityLevel);
+        mAllTasksDatabaseReference.child("priority").setValue(priorityLevel);
+        task.setPriority(priorityLevel); //Update currentTask - keeping taskInfoFragment up to date
+        setPriorityImage(priorityLevel);//Updating the image to show instant change of priority
+
+    }
+
+    private void setPriorityImage(int priorityLevel){
+        switch(priorityLevel){
+            case PRIORITY_URGENT:
+                priorityImage.setImageResource(R.mipmap.ic_launcher);
+                break;
+            case PRIORITY_HIGH:
+                priorityImage.setImageResource(R.mipmap.ic_launcher_foreground);
+                break;
+            case PRIORITY_DEFAULT:
+                priorityImage.setImageResource(R.mipmap.ic_launcher);
+                break;
+        }
+
     }
 }
