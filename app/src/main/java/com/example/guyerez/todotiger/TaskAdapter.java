@@ -194,7 +194,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                 optionsMenu.show();
             }
         });
-        
+
         // Find the CheckBox in the task_item.xml layout with the ID check_box.
 
         checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {

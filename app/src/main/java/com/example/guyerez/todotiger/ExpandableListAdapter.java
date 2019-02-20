@@ -2,7 +2,10 @@ package com.example.guyerez.todotiger;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -14,26 +17,34 @@ import android.support.v7.view.menu.MenuPopupHelper;
 import android.util.Log;
 import android.util.SparseArray;
 import android.util.TypedValue;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.BaseExpandableListAdapter;
 import android.widget.CheckBox;
 import android.widget.CheckedTextView;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import org.w3c.dom.Text;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
@@ -43,6 +54,11 @@ import static com.example.guyerez.todotiger.TaskActivity.PRIORITY_HIGH;
 import static com.example.guyerez.todotiger.TaskActivity.PRIORITY_URGENT;
 
 public class ExpandableListAdapter extends BaseExpandableListAdapter {
+
+    //Variables indicating task LongClick options
+    public static final int ACTION_INFO = 0;
+    public static final int ACTION_MOVE_TO = 1;
+    public static final int ACTION_DELETE = 2;
 
     //SparseArray to hold the taskGroups
     private final SparseArray<TaskGroup> taskGroups;
@@ -67,6 +83,20 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
     private DatabaseReference mTaskDatabaseReference;
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mAllTasksDatabaseReference;
+    private DatabaseReference mTaskListDatabaseReference;
+    private DatabaseReference mTaskDatabaseReference2;
+    private DatabaseReference mTaskNumDatabaseReference2;
+    private ChildEventListener mChildEventListener;
+    private ChildEventListener mChildEventListener2;
+
+    //Variables for moving Tasks from one TaskList to another
+    private int taskCount2;
+    private boolean flag;
+    private TaskListAdapter mTaskListAdapter;
+    private ListView taskListsView;
+    private String currentTaskListId;
+    private String currentTaskListTitle;
+    private Dialog moveTaskDialog;
 
     //Define relevant UI components
     private ImageView priorityImage;
@@ -89,6 +119,7 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 
         // Initialize Firebase DB
         mFirebaseDatabase = FirebaseDatabase.getInstance();
+
 
     }
 
@@ -123,16 +154,53 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
         title.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(activity instanceof TaskActivity){
-                    //Use the TaskActivity getTaskInfo method to start TaskInfoFragment
-                    ((TaskActivity)activity).getTaskInfo(task);
-                }
                 if(activity instanceof SearchTask){
                     ((SearchTask)activity).getTaskInfo(task);
                 }
 
             }
         });
+        title.setLongClickable(true);
+        title.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                final CharSequence[] options = {"Info","Move to","Delete"};
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+
+                builder.setTitle("Choose Action:");
+                builder.setItems(options, new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface dialog, int item) {
+                        switch(item){
+                            case ACTION_INFO:
+                                //Open the TaskInfoFragment for this task
+                                ((SearchTask)activity).getTaskInfo(task);
+                                break;
+                            case ACTION_MOVE_TO:
+                                //Open a dialog and allow the user to choose a TaskList to move the current task to
+                                initDatabaseReferencesForTaskOptions(task);
+                                getTaskLists(task);
+                                setTaskMoveDialog();
+                                moveTaskDialog.show();
+                                moveTaskToSelectedList(task);
+                                break;
+                            case ACTION_DELETE:
+                                //Confirm delete and perform the task's deletion
+                                initDatabaseReferencesForTaskOptions(task);
+                                confirmDeleteDialog(task);
+                                break;
+
+                        }
+                    }
+                });
+                AlertDialog taskOptions = builder.create();
+
+                taskOptions.show();
+                return false;
+            }
+        });
+
         //Set Title height to fit date TextView's appropriately
         if(showCreated || showDue || showCompleted){
             title.setHeight((int) TypedValue.applyDimension
@@ -438,6 +506,22 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
         mAllTasksDatabaseReference=mFirebaseDatabase.getReference()
                 .child("users").child(currentUser)
                 .child("allTasks").child(task.getId());
+        mTaskListDatabaseReference=mFirebaseDatabase.getReference().child("users")
+                .child(currentUser).child("TaskLists");
+    }
+
+    private void initDatabaseReferencesForTaskOptions(Task task){
+        mTaskDatabaseReference=mFirebaseDatabase.getReference()
+                .child("users").child(currentUser).child("TaskLists")
+                .child(task.getTaskListId()).child("tasks");
+        mAllTasksDatabaseReference=mFirebaseDatabase.getReference()
+                .child("users").child(currentUser)
+                .child("allTasks");
+        mTaskListDatabaseReference=mFirebaseDatabase.getReference().child("users")
+                .child(currentUser).child("TaskLists");
+        mTaskNumDatabaseReference2=mFirebaseDatabase.getReference().child("users")
+                .child(currentUser).child("TaskLists")
+                .child(task.getTaskListId());
     }
 
     private void updateTaskChecked(TextView title,TextView dueDateTextView,Task task) {
@@ -506,6 +590,189 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
         }
 
     }
+
+
+    private void getTaskLists(final Task taskClicked){
+        //Starts a childEventListener to get the list of TaskLists
+        mChildEventListener2 = new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+
+                TaskList taskList = dataSnapshot.getValue(TaskList.class);
+                //Don't show current TaskList in the move-to ListView (you're already there)
+                if(!taskList.getId().equals(taskClicked.getTaskListId())) {
+                    mTaskListAdapter.add(taskList);
+                }
+            }
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {}
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+            }
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {}
+            public void onCancelled(DatabaseError databaseError) {}
+        };
+        mTaskListDatabaseReference.addChildEventListener(mChildEventListener2);
+    }
+
+    private void setTaskMoveDialog(){
+        //Initialize TaskList Array, ListView and Adapter for the popup dialog ListView
+        final ArrayList<TaskList> taskLists = new ArrayList<TaskList>();
+        moveTaskDialog = new Dialog(activity,R.style.CustomDialog);
+        moveTaskDialog.setContentView(R.layout.move_task_dialog);
+        moveTaskDialog.setTitle("Choose a TaskList");
+        moveTaskDialog.getWindow().getAttributes().windowAnimations = R.style.DialogTheme;
+        taskListsView= (ListView) moveTaskDialog.findViewById(R.id.List);
+        // Create an {@link TaskListAdapter}, whose data source is a list of {@link TaskList}s.
+        mTaskListAdapter = new TaskListAdapter(activity, taskLists);
+        taskListsView.setAdapter(mTaskListAdapter);
+    }
+    private void moveTaskToSelectedList(final Task task){
+        //Initialize an onItemClickListener to allow the user to choose a TaskList
+        //And then move the chosen task into that TaskList
+        taskListsView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+                // Find the current task list that was clicked on
+                TaskList currentTaskList = mTaskListAdapter.getItem(position);
+
+                //get the current task list's ID and title
+                currentTaskListId=currentTaskList.getId();
+                currentTaskListTitle=currentTaskList.getTitle();
+                //Get references for that specific TaskList and the number of tasks in it
+                mTaskDatabaseReference2=mFirebaseDatabase.getReference().child("users")
+                        .child(currentUser).child("TaskLists")
+                        .child(currentTaskListId).child("tasks");
+                mTaskNumDatabaseReference2=mFirebaseDatabase.getReference().child("users")
+                        .child(currentUser).child("TaskLists")
+                        .child(currentTaskListId);
+
+                //Move the task inside the DB to another TaskList
+                moveTaskFireBase(mTaskDatabaseReference,mTaskDatabaseReference2,task.getId());
+                //Update the task's current TaskList ID and title
+                mTaskDatabaseReference2.child(task.getId()).child("taskListId").setValue(currentTaskListId);
+                mAllTasksDatabaseReference.child(task.getId()).child("taskListId").setValue(currentTaskListId);
+                mTaskDatabaseReference2.child(task.getId()).child("taskListTitle").setValue(currentTaskListTitle);
+                mAllTasksDatabaseReference.child(task.getId()).child("taskListTitle").setValue(currentTaskListTitle);
+
+                //Set flag to true to avoid an infinite loop while updating the taskNum for that TaskList
+                flag=true;
+                mTaskNumDatabaseReference2.addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        taskCount2 =dataSnapshot.getValue(TaskList.class).getTaskNum();
+                        if(flag) {
+                            flag=false;
+                            mTaskNumDatabaseReference2.child("taskNum").setValue(taskCount2 + 1);
+                        }
+
+
+
+
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+                        System.out.println("The read failed: " + databaseError.getCode());
+                    }
+                });
+
+//                //Remove the task from the current TaskAdapter and dismiss the dialog
+//                mTaskAdapter.remove(task);
+                moveTaskDialog.dismiss();
+                Toast.makeText(activity,"Task moved!", Toast.LENGTH_LONG).show();
+
+            }
+        });
+
+    }
+
+    private void confirmDeleteDialog(final Task taskClicked){
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+        //Set the title
+        builder.setTitle("Delete this task?");
+        // Add the buttons
+        builder.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                //Delete the selected task and cancel the reminder if it had one
+                mTaskDatabaseReference.child(taskClicked.getId()).removeValue();
+                mAllTasksDatabaseReference.child(taskClicked.getId()).removeValue();
+
+                //Set flag to true to avoid an infinite loop while updating the taskNum for that TaskList
+                flag=true;
+                mTaskNumDatabaseReference2.addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        taskCount2 =dataSnapshot.getValue(TaskList.class).getTaskNum();
+                        if(flag) {
+                            flag=false;
+                            mTaskNumDatabaseReference2.child("taskNum").setValue(taskCount2 - 1);
+                        }
+
+
+
+
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+                        System.out.println("The read failed: " + databaseError.getCode());
+                    }
+                });
+//                mTaskAdapter.remove(taskClicked);
+                if(taskClicked.getReminderDate()!=null){
+                    TaskInfoFragment.cancelReminder(activity,AlarmReceiver.class,taskClicked.getIntId());
+                }
+                Toast.makeText(activity, "Task deleted!", Toast.LENGTH_LONG).show();
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // User cancelled the dialog
+                dialog.cancel();
+            }
+        });
+
+        // Create the AlertDialog
+        AlertDialog deleteDialog = builder.create();
+        deleteDialog.getWindow().getAttributes().windowAnimations = R.style.DialogTheme;
+        deleteDialog.show();
+    }
+
+    // "fromPath" and "toPath" are like directories in the DB - we move the task from one to the other.
+    private void moveTaskFireBase(final DatabaseReference fromPath, final DatabaseReference toPath, final String key) {
+        fromPath.child(key).addListenerForSingleValueEvent(new ValueEventListener() {
+            // Now "DataSnapshot" holds the key and the value at the "fromPath".
+            // So we copy it and transfer it to "toPath"
+            //Then we delete the current task in "fromPath"
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                toPath.child(dataSnapshot.getKey())
+                        .setValue(dataSnapshot.getValue(), new DatabaseReference.CompletionListener() {
+                            @Override
+                            public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                                if (databaseError == null) {
+                                    Log.i("TaskActivity", "onComplete: success");
+                                    // In order to complete the move, we erase the original copy
+                                    // by assigning null as its value.
+                                    fromPath.child(key).setValue(null);
+
+                                }
+                                else {
+                                    Log.e("TaskActivity", "onComplete: failure:" + databaseError.getMessage() + ": "
+                                            + databaseError.getDetails());
+                                }
+                            }
+                        });
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.e("TaskActivity", "onCancelled: " + databaseError.getMessage() + ": "
+                        + databaseError.getDetails());
+            }
+        });
+    }
+
 
 
 }
