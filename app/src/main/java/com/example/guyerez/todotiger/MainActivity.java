@@ -50,6 +50,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 
 import static com.example.guyerez.todotiger.TaskActivity.TASKS_DUE_TODAY;
 import static com.example.guyerez.todotiger.TaskActivity.TASKS_DUE_WEEK;
@@ -373,12 +374,15 @@ public class MainActivity extends AppCompatActivity {
                     mEmptyStateTextView.setVisibility(View.GONE);
                     loadingIndicator.setVisibility(View.GONE);
                     TaskList taskList = dataSnapshot.getValue(TaskList.class);
-                    if ((taskList.getId().equals("Due TodayID") && (!showDueToday))
-                            || (taskList.getId().equals("Due This WeekID") && (!showDueWeek))) {
-                        //Don't add Default TaskList to Adapter
-                        return;
+                    if(taskList.getId()!=null){
+                        if ((taskList.getId().equals("Due TodayID") && (!showDueToday))
+                                || (taskList.getId().equals("Due This WeekID") && (!showDueWeek))) {
+                            //Don't add Default TaskList to Adapter
+                            return;
+                        }
+                        mTaskListAdapter.add(taskList);
                     }
-                    mTaskListAdapter.add(taskList);
+
                 }
 
                 public void onChildChanged(DataSnapshot dataSnapshot, String s) {
@@ -439,6 +443,7 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 }
                 mTaskListDatabaseReference.child(taskListClicked.getId()).removeValue();
+                removeFromAllTasks(taskListClicked.getId());
                 mTaskListAdapter.remove(taskListClicked);
                 Toast.makeText(this, "Task List deleted!", Toast.LENGTH_LONG).show();
                 break;
@@ -449,6 +454,36 @@ public class MainActivity extends AppCompatActivity {
         }
         return true;
     }
+
+    private void removeFromAllTasks(final String taskListId) {
+        final List<Task>tasksToDelete=new ArrayList<>();
+        mAllTasksDatabaseReference.addValueEventListener(new ValueEventListener() {
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for(DataSnapshot snapshot : dataSnapshot.getChildren()){
+                    Task task = snapshot.getValue(Task.class);
+                    Log.d("wat1", "onDataChange: "+task.getTitle());
+                    if (task.getTaskListId().equals(taskListId)) {
+                        Log.d("wat2", "onDataChange: "+task.getTitle());
+                        tasksToDelete.add(task);
+                    }
+
+                }
+                for(Task t:tasksToDelete){
+                    Log.d("wat4", "onDataChange: "+t.getTitle());
+                    mAllTasksDatabaseReference.child(t.getId()).removeValue();
+                }
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
+
+    }
+
 
     private void createNotificationChannel() {
         // Create the NotificationChannel, but only on API 26+ because
