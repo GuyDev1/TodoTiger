@@ -1,5 +1,6 @@
 package com.example.guyerez.todotiger;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -63,7 +64,7 @@ public class TaskActivity extends AppCompatActivity {
     private View loadingIndicator;
     //Edit text and button for creating new tasks quickly
     private EditText mTaskEditText;
-    private Button mTaskCreateButton;
+    private Button mTaskAddButton;
     //Show completed tasks boolean
     public static int tasksToShow;
 
@@ -115,6 +116,7 @@ public class TaskActivity extends AppCompatActivity {
     private String currentUser;
     private String thisTaskList;
     private String thisTaskListTitle;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -147,10 +149,10 @@ public class TaskActivity extends AppCompatActivity {
         // Initialize references to views
 
         mTaskEditText = (EditText) findViewById(R.id.task_edit_text);
-        mTaskCreateButton = (Button) findViewById(R.id.create_task_button);
+        mTaskAddButton = (Button) findViewById(R.id.add_task_button);
 
 
-        // Enable create button when input is not empty
+        // Enable add button when input is not empty
         mTaskEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -159,9 +161,9 @@ public class TaskActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 if (charSequence.toString().trim().length() > 0) {
-                    mTaskCreateButton.setEnabled(true);
+                    mTaskAddButton.setEnabled(true);
                 } else {
-                    mTaskCreateButton.setEnabled(false);
+                    mTaskAddButton.setEnabled(false);
                 }
             }
 
@@ -170,14 +172,14 @@ public class TaskActivity extends AppCompatActivity {
             }
         });
 
-        // Create button creates a new task and clears the EditText
-        mTaskCreateButton.setOnClickListener(new View.OnClickListener() {
+        // Add button creates a new task and clears the EditText
+        mTaskAddButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // Get task title from user and create a new task
+                // Get task title from user and add a new task
                 //Also fetch the FireBase ID and SharedPreferences ID
                 //And finally get the task's creation date
-                taskIdNumber=sharedPref.getInt("taskIdNumber",SHOW_OPEN_TASKS);
+                taskIdNumber=sharedPref.getInt("taskIdNumber",1);
                 Calendar calendar=Calendar.getInstance();
                 Date creationDate =calendar.getTime();
                 String taskId = mTaskDatabaseReference.push().getKey();
@@ -228,9 +230,6 @@ public class TaskActivity extends AppCompatActivity {
         //Set context menu for ListView
         listView.setLongClickable(true);
         registerForContextMenu(listView);
-
-
-
 
 
         //Get reference for the task list that belongs to the logged in user and attach the database listener
@@ -289,7 +288,6 @@ public class TaskActivity extends AppCompatActivity {
                 System.out.println("The read failed: " + databaseError.getCode());
             }
         });
-
 
     }
 
@@ -409,7 +407,9 @@ public class TaskActivity extends AppCompatActivity {
                 }
                 public void onChildChanged(DataSnapshot dataSnapshot, String s) { ;
                 }
+                @SuppressLint("NewApi")
                 public void onChildRemoved(DataSnapshot dataSnapshot) {
+                    Task task = dataSnapshot.getValue(Task.class);
                     if(mTaskAdapter.isEmpty()){
                         mEmptyStateTextView.setVisibility(View.VISIBLE);
                         mEmptyStateTextView.setText("No task lists, add a new one!");
@@ -750,7 +750,7 @@ public class TaskActivity extends AppCompatActivity {
 
                 TaskList taskList = dataSnapshot.getValue(TaskList.class);
                 //Don't show current TaskList in the move-to ListView (you're already there)
-                if(!taskList.getId().equals(thisTaskList)) {
+                if(isRelevantTaskList(taskList,thisTaskList)) {
                     mTaskListAdapter.add(taskList);
                 }
             }
@@ -865,7 +865,13 @@ public class TaskActivity extends AppCompatActivity {
         deleteDialog.show();
     }
 
-
+    private boolean isRelevantTaskList(TaskList taskList,String currentTaskList) {
+        if(taskList.getId().equals(currentTaskList ) || taskList.getId().equals("Due TodayID")
+                ||taskList.getId().equals("Due This WeekID")){
+            return false;
+        }
+        return true;
+    }
 
     }
 

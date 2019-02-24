@@ -381,6 +381,8 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                         dueDateTextView.setAlpha(1);
                         return "Due tomorrow";
                     default:
+                        dueDateTextView.setTextColor(Color.parseColor("#000000"));
+                        dueDateTextView.setAlpha(0.54f);
                         return String.format(Locale.getDefault(), "Due in %d days", dayDifference);
                 }
             }

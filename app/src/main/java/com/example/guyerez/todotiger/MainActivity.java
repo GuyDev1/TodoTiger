@@ -1,5 +1,6 @@
 package com.example.guyerez.todotiger;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -9,7 +10,9 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
@@ -38,18 +41,26 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 
+import static com.example.guyerez.todotiger.TaskActivity.TASKS_DUE_TODAY;
+import static com.example.guyerez.todotiger.TaskActivity.TASKS_DUE_WEEK;
+
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String CHANNEL_ID = "123";
+    private static final int DEFAULT_INBOX = 0;
+    private static final int DEFAULT_DUE_TODAY = 1;
+    private static final int DEFAULT_DUE_WEEK = 2;
     final Context context = this;
     public static final int SIGN_IN = 1;
     private String currentUserId;
@@ -66,10 +77,22 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseAuth.AuthStateListener mAuthStateListener;
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mTaskListDatabaseReference;
+    private DatabaseReference mAllTasksDatabaseReference;
+    private DatabaseReference mTaskNumDatabaseReferenceDueToday;
+    private DatabaseReference mTaskNumDatabaseReferenceDueWeek;
     private ChildEventListener mChildEventListener;
 
     //SharedPreferences instance
     private SharedPreferences sharedPref;
+
+    //Indicators - Show default TaskLists in ListView
+    private boolean showDueToday;
+    private boolean showDueWeek;
+
+    //Task Counters for Default TaskList's - DueToday and DueWeek
+    private int countDueToday;
+    private int countDueWeek;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,13 +114,12 @@ public class MainActivity extends AppCompatActivity {
         rootRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
-                if (snapshot!=null)
-                {
-                    if(getCurrentUserId()!=null && !snapshot.hasChild(getCurrentUserId())) {
-                    mEmptyStateTextView.setVisibility(View.VISIBLE);
-                    mEmptyStateTextView.setText("No task lists, add a new one!");
-                    loadingIndicator.setVisibility(View.GONE);
-                }
+                if (snapshot != null) {
+                    if (getCurrentUserId() != null && !snapshot.hasChild(getCurrentUserId())) {
+                        mEmptyStateTextView.setVisibility(View.VISIBLE);
+                        mEmptyStateTextView.setText("No task lists, add a new one!");
+                        loadingIndicator.setVisibility(View.GONE);
+                    }
                 }
             }
 
@@ -135,7 +157,7 @@ public class MainActivity extends AppCompatActivity {
                 if (user != null) {
                     // user is signed in
 
-                    currentUserId=user.getUid();
+                    currentUserId = user.getUid();
                     onSignedInInitialize(user.getUid());
 
                 } else {
@@ -177,26 +199,22 @@ public class MainActivity extends AppCompatActivity {
                         .findViewById(R.id.edit_list_name);
 
 
-
                 // Set dialog message
                 alertDialogBuilder
                         .setCancelable(false)
-                        .setPositiveButton("Create",
+                        .setPositiveButton("Add",
                                 new DialogInterface.OnClickListener() {
-                                    public void onClick(DialogInterface dialog,int id) {
+                                    public void onClick(DialogInterface dialog, int id) {
                                         // Get list title from user and create a new task list
                                         //Also fetch the FireBase ID and connect it to the new task list.
                                         //And finally get the TaskList's creation date
-                                        Calendar calendar=Calendar.getInstance();
-                                        Date creationDate =calendar.getTime();
-                                        String mTaskListId = mTaskListDatabaseReference.push().getKey();
-                                        TaskList taskList = new TaskList(userInput.getText().toString(),mTaskListId,creationDate);
-                                        mTaskListDatabaseReference.child(mTaskListId).setValue(taskList);
+                                        createNewTaskList(userInput.getText().toString());
+
                                     }
                                 })
                         .setNegativeButton("Cancel",
                                 new DialogInterface.OnClickListener() {
-                                    public void onClick(DialogInterface dialog,int id) {
+                                    public void onClick(DialogInterface dialog, int id) {
                                         dialog.cancel();
                                     }
                                 });
@@ -238,28 +256,20 @@ public class MainActivity extends AppCompatActivity {
                 // Find the current task list that was clicked on
                 TaskList currentTaskList = mTaskListAdapter.getItem(position);
 
-
-                //Update current TaskList in SharedPreferences
-                SharedPreferences pref = getApplicationContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
-                SharedPreferences.Editor editor = pref.edit();
-                editor.putString("currentTaskList", currentTaskList.getId());
-                editor.putString("currentTaskListTitle", currentTaskList.getTitle());
-                editor.commit();
-
-
-                // Create a new intent to view the tasks in the chosen list
-                Intent taskIntent = new Intent(MainActivity.this, TaskActivity.class);
-
-                // Send the intent to launch a new activity
-                startActivity(taskIntent);
+                //Open the new TaskList as a new TaskActivity
+                openTaskList(currentTaskList);
             }
         });
 
         listView.setLongClickable(true);
         registerForContextMenu(listView);
 
+        //init default TaskList preferences
+        initDefaultTaskListsPrefs();
+
 
     }
+
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -280,7 +290,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.mini_menu,menu);
+        inflater.inflate(R.menu.mini_menu, menu);
         return true;
     }
 
@@ -310,7 +320,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         mFirebaseAuth.addAuthStateListener(mAuthStateListener);
 
-        }
+    }
 
     @Override
     protected void onPause() {
@@ -326,8 +336,20 @@ public class MainActivity extends AppCompatActivity {
     private void onSignedInInitialize(final String userId) {
 
         //Get reference for the task list for the logged in user and attach the database listener
-        mTaskListDatabaseReference=mFirebaseDatabase.getReference().child("users").child(userId).child("TaskLists");
+        mTaskListDatabaseReference = mFirebaseDatabase.getReference().child("users").child(userId).child("TaskLists");
+        mAllTasksDatabaseReference = mFirebaseDatabase.getReference().child("users")
+                .child(userId).child("allTasks");
+        mTaskNumDatabaseReferenceDueToday = mFirebaseDatabase.getReference().child("users")
+                .child(userId).child("TaskLists").child("Due TodayID");
+        mTaskNumDatabaseReferenceDueWeek = mFirebaseDatabase.getReference().child("users")
+                .child(userId).child("TaskLists").child("Due This WeekID");
         attachDatabaseReadListener();
+        attachDatabaseReadListenerDue();
+
+        if (!defaultTasksCreated(userId)) {
+            initDefaultTaskLists(userId);
+        }
+
 
         //Update current user in SharedPreferences
         SharedPreferences pref = getApplicationContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
@@ -337,10 +359,12 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+
     private void onSignedOutCleanup() {
         mTaskListAdapter.clear();
         detachDatabaseReadListener();
     }
+
     private void attachDatabaseReadListener() {
         if (mChildEventListener == null) {
             mChildEventListener = new ChildEventListener() {
@@ -349,23 +373,36 @@ public class MainActivity extends AppCompatActivity {
                     mEmptyStateTextView.setVisibility(View.GONE);
                     loadingIndicator.setVisibility(View.GONE);
                     TaskList taskList = dataSnapshot.getValue(TaskList.class);
+                    if ((taskList.getId().equals("Due TodayID") && (!showDueToday))
+                            || (taskList.getId().equals("Due This WeekID") && (!showDueWeek))) {
+                        //Don't add Default TaskList to Adapter
+                        return;
+                    }
                     mTaskListAdapter.add(taskList);
                 }
-                public void onChildChanged(DataSnapshot dataSnapshot, String s) {}
+
+                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                }
+
                 public void onChildRemoved(DataSnapshot dataSnapshot) {
-                    if(mTaskListAdapter.isEmpty()){
+                    if (mTaskListAdapter.isEmpty()) {
                         mEmptyStateTextView.setVisibility(View.VISIBLE);
                         mEmptyStateTextView.setText("No task lists, add a new one!");
                     }
                 }
-                public void onChildMoved(DataSnapshot dataSnapshot, String s) {}
-                public void onCancelled(DatabaseError databaseError) {}
+
+                public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+                }
+
+                public void onCancelled(DatabaseError databaseError) {
+                }
             };
 
         }
         mTaskListDatabaseReference.addChildEventListener(mChildEventListener);
 
     }
+
     private void detachDatabaseReadListener() {
         if (mChildEventListener != null) {
             mTaskListDatabaseReference.removeEventListener(mChildEventListener);
@@ -382,20 +419,25 @@ public class MainActivity extends AppCompatActivity {
      */
 
     @Override
-    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo){
-        if (v.getId() == R.id.task_list_view){
-            AdapterView.AdapterContextMenuInfo info =(AdapterView.AdapterContextMenuInfo)menuInfo;
-            menu.add(0,0,0,"Delete");
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        if (v.getId() == R.id.task_list_view) {
+            AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
+            menu.add(0, 0, 0, "Delete");
         }
     }
 
     @Override
-    public boolean onContextItemSelected(MenuItem menuItem){
-        AdapterView.AdapterContextMenuInfo info=(AdapterView.AdapterContextMenuInfo)menuItem.getMenuInfo();
-        TaskList taskListClicked=mTaskListAdapter.getItem(info.position);
-        Log.d("check","" +taskListClicked.getTitle());
+    public boolean onContextItemSelected(MenuItem menuItem) {
+        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuItem.getMenuInfo();
+        TaskList taskListClicked = mTaskListAdapter.getItem(info.position);
+        Log.d("check", "" + taskListClicked.getTitle());
         switch (menuItem.getItemId()) {
             case 0:
+                if (taskListClicked.getId().equals("InboxID") || taskListClicked.getId().equals("Due TodayID")
+                        || taskListClicked.getId().equals("Due This WeekID")) {
+                    Toast.makeText(this, "Can't delete default Task List", Toast.LENGTH_LONG).show();
+                    break;
+                }
                 mTaskListDatabaseReference.child(taskListClicked.getId()).removeValue();
                 mTaskListAdapter.remove(taskListClicked);
                 Toast.makeText(this, "Task List deleted!", Toast.LENGTH_LONG).show();
@@ -424,4 +466,149 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void createNewTaskList(String title) {
+        Calendar calendar = Calendar.getInstance();
+        Date creationDate = calendar.getTime();
+        String mTaskListId = mTaskListDatabaseReference.push().getKey();
+        TaskList taskList = new TaskList(title, mTaskListId, creationDate);
+        mTaskListDatabaseReference.child(mTaskListId).setValue(taskList);
+        openTaskList(taskList);
+    }
+
+    private void openTaskList(TaskList currentTaskList) {
+
+        //Update current TaskList in SharedPreferences
+        SharedPreferences pref = getApplicationContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = pref.edit();
+        editor.putString("currentTaskList", currentTaskList.getId());
+        editor.putString("currentTaskListTitle", currentTaskList.getTitle());
+        editor.commit();
+
+
+        if (currentTaskList.getId().equals("Due TodayID") || currentTaskList.getId().equals("Due This WeekID")) {
+            Intent taskIntent = new Intent(MainActivity.this, SpecialTaskListActivity.class);
+            // Send the intent to launch a new activity
+            startActivity(taskIntent);
+        } else {
+            // Create a new intent to view the tasks in the chosen list
+            Intent taskIntent = new Intent(MainActivity.this, TaskActivity.class);
+            // Send the intent to launch a new activity
+            startActivity(taskIntent);
+        }
+
+
+    }
+
+    private void initDefaultTaskLists(String currentUserId) {
+        createDefaultTaskList("Inbox", DEFAULT_INBOX);
+        createDefaultTaskList("Due Today", DEFAULT_DUE_TODAY);
+        createDefaultTaskList("Due This Week", DEFAULT_DUE_WEEK);
+
+        //Update that default TaskLists was created for this user
+        SharedPreferences pref = getApplicationContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = pref.edit();
+        editor.putBoolean("defaultTasksCreated" + currentUserId, true); // Storing boolean - true/false
+        editor.commit();
+    }
+
+    //Check whether we already created the default TaskLists for this user
+    private boolean defaultTasksCreated(String currentUserId) {
+        SharedPreferences currentData = context.getSharedPreferences("MyPref", Context.MODE_PRIVATE);
+        return currentData.getBoolean("defaultTasksCreated" + currentUserId, false);
+    }
+
+    private void createDefaultTaskList(String taskListName, int defaultTaskName) {
+        Log.d("wat", "createDefaultTaskList: ");
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(2000, 1, 1, 0, defaultTaskName);
+        Date creationDate = calendar.getTime();
+        TaskList taskList = new TaskList(taskListName, taskListName + "ID", creationDate);
+        mTaskListDatabaseReference.child(taskListName + "ID").setValue(taskList);
+    }
+
+    private void initDefaultTaskListsPrefs() {
+        //Get Settings to indicate whether the user wants to see the default TaskLists
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+        showDueToday = settings.getBoolean("show_due_today", true);
+        showDueWeek = settings.getBoolean("show_due_week", true);
+
+    }
+
+    private void attachDatabaseReadListenerDue() {
+        mAllTasksDatabaseReference.addValueEventListener(new ValueEventListener() {
+            @SuppressLint("NewApi")
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                countDueToday=0;
+                countDueWeek=0;
+                for(DataSnapshot snapshot : dataSnapshot.getChildren()){
+                    Task task = snapshot.getValue(Task.class);
+                    if (task != null && task.getDueDate()!=null) {
+                        try {
+                            if (checkDueDate(TASKS_DUE_TODAY, task.getDueDate())) {
+                                countDueToday++;
+                                countDueWeek++;
+                            }
+                            else if(checkDueDate(TASKS_DUE_WEEK, task.getDueDate())){
+                                countDueWeek++;
+                            }
+                        } catch (ParseException e) {
+                            e.printStackTrace();
+                        }
+
+                    };
+
+                }
+
+                mTaskNumDatabaseReferenceDueToday.child("taskNum").setValue(countDueToday);
+                mTaskNumDatabaseReferenceDueWeek.child("taskNum").setValue(countDueWeek);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private boolean checkDueDate(int dueWhen, Date dueDate) throws ParseException {
+        //Get's duedate filter (today/week/month) and check if current task's due date fits.
+        Calendar currentCalendar = Calendar.getInstance();
+        Calendar dueCalendar = Calendar.getInstance();
+        currentCalendar.setTime(currentCalendar.getTime());
+        dueCalendar.setTime(dueDate);
+        int currentDay=currentCalendar.get(Calendar.DAY_OF_YEAR);
+        int currentYear=currentCalendar.getWeekYear();
+        int currentWeek=currentCalendar.get(Calendar.WEEK_OF_YEAR);
+//        int currentMonth=currentCalendar.get(Calendar.MONTH);
+        int dueDay=dueCalendar.get(Calendar.DAY_OF_YEAR);
+        int dueYear=dueCalendar.getWeekYear();
+        int dueWeek=dueCalendar.get(Calendar.WEEK_OF_YEAR);
+//        int dueMonth=dueCalendar.get(Calendar.MONTH);
+
+        switch (dueWhen){
+            case TASKS_DUE_TODAY:
+                if (currentYear>=dueYear && currentDay>=dueDay
+                        && currentWeek>=dueWeek){
+                    return true;
+                }
+                break;
+            case TASKS_DUE_WEEK:
+                if(currentYear==dueYear && currentWeek==dueWeek){
+                    return true;
+                }
+                break;
+//            case TASKS_DUE_MONTH:
+//                if(currentMonth==dueMonth){
+//                    return true;
+//                }
+//                break;
+
+
+
+        }
+        return false;
+    }
 }
+

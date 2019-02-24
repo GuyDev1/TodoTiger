@@ -157,6 +157,9 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
                 if(activity instanceof SearchTask){
                     ((SearchTask)activity).getTaskInfo(task);
                 }
+                else{
+                    ((SpecialTaskListActivity)activity).getTaskInfo(task);
+                }
 
             }
         });
@@ -175,7 +178,12 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
                         switch(item){
                             case ACTION_INFO:
                                 //Open the TaskInfoFragment for this task
-                                ((SearchTask)activity).getTaskInfo(task);
+                                if(activity instanceof SearchTask){
+                                    ((SearchTask)activity).getTaskInfo(task);
+                                }
+                                else{
+                                    ((SpecialTaskListActivity)activity).getTaskInfo(task);
+                                }
                                 break;
                             case ACTION_MOVE_TO:
                                 //Open a dialog and allow the user to choose a TaskList to move the current task to
@@ -184,11 +192,13 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
                                 setTaskMoveDialog();
                                 moveTaskDialog.show();
                                 moveTaskToSelectedList(task);
+                                notifyDataSetChanged();
                                 break;
                             case ACTION_DELETE:
                                 //Confirm delete and perform the task's deletion
                                 initDatabaseReferencesForTaskOptions(task);
                                 confirmDeleteDialog(task);
+
                                 break;
 
                         }
@@ -430,6 +440,8 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
                         dueDateTextView.setAlpha(1);
                         return "Due tomorrow";
                     default:
+                        dueDateTextView.setTextColor(Color.parseColor("#000000"));
+                        dueDateTextView.setAlpha(0.54f);
                         return String.format(Locale.getDefault(), "Due in %d days", dayDifference);
                 }
             }
@@ -600,7 +612,7 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 
                 TaskList taskList = dataSnapshot.getValue(TaskList.class);
                 //Don't show current TaskList in the move-to ListView (you're already there)
-                if(!taskList.getId().equals(taskClicked.getTaskListId())) {
+                if(isRelevantTaskList(taskList,taskClicked)) {
                     mTaskListAdapter.add(taskList);
                 }
             }
@@ -613,6 +625,8 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
         };
         mTaskListDatabaseReference.addChildEventListener(mChildEventListener2);
     }
+
+
 
     private void setTaskMoveDialog(){
         //Initialize TaskList Array, ListView and Adapter for the popup dialog ListView
@@ -696,6 +710,8 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
                 //Delete the selected task and cancel the reminder if it had one
                 mTaskDatabaseReference.child(taskClicked.getId()).removeValue();
                 mAllTasksDatabaseReference.child(taskClicked.getId()).removeValue();
+                notifyDataSetChanged();
+
 
                 //Set flag to true to avoid an infinite loop while updating the taskNum for that TaskList
                 flag=true;
@@ -771,6 +787,14 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
                         + databaseError.getDetails());
             }
         });
+    }
+
+    private boolean isRelevantTaskList(TaskList taskList,Task taskClicked) {
+        if(taskList.getId().equals(taskClicked.getTaskListId()) || taskList.getId().equals("Due TodayID")
+                ||taskList.getId().equals("Due This WeekID")){
+            return false;
+        }
+        return true;
     }
 
 

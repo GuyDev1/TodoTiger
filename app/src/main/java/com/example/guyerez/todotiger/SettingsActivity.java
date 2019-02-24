@@ -16,6 +16,7 @@ public class SettingsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.settings_activity);
+
     }
     public static class PrefsFragment extends PreferenceFragmentCompat implements Preference.OnPreferenceChangeListener {
         @Override
@@ -34,6 +35,12 @@ public class SettingsActivity extends AppCompatActivity {
 
             Preference showCompleted=findPreference("show_completed_date");
             setPreference(showCompleted);
+
+            Preference showDueToday=findPreference("show_due_today");
+            setPreference(showDueToday);
+
+            Preference showDueWeek=findPreference("show_due_week");
+            setPreference(showDueWeek);
         }
 
         /**
@@ -42,7 +49,13 @@ public class SettingsActivity extends AppCompatActivity {
         @Override
         public boolean onPreferenceChange(Preference preference, Object value) {
             String stringValue = value.toString();
-            preference.setSummary(stringValue);
+            if(stringValue.equals("true")){
+                preference.setSummary("Visible");
+            }
+            else{
+                preference.setSummary("Hidden");
+            }
+
             return true;
         }
 

@@ -5,7 +5,8 @@
 
     <SwitchPreference
         android:key="show_created_date"
-        android:title="Show task's creation date" />
+        android:title="Show task's creation date"/>
+
 
     <SwitchPreference
         android:key="show_due_date"
@@ -14,6 +15,14 @@
     <SwitchPreference
         android:key="show_completed_date"
         android:title="Show task's completion date" />
+
+    <SwitchPreference
+        android:key="show_due_today"
+        android:title="Show all tasks due today" />
+
+    <SwitchPreference
+        android:key="show_due_week"
+        android:title="Show all tasks due this week" />
 
 
 </PreferenceScreen>
