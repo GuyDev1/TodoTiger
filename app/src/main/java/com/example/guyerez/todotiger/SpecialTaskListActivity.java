@@ -87,6 +87,9 @@ public class SpecialTaskListActivity extends AppCompatActivity {
     //SharedPreferences instance
     private SharedPreferences sharedPref;
 
+    //Indicator whether the list is empty or not
+    private boolean isEmpty;
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -208,6 +211,9 @@ public class SpecialTaskListActivity extends AppCompatActivity {
         listView.setAdapter(adapter);
         listView.setGroupIndicator(null);
 
+        //Check for tasks - react appropriately if the TaskList is empty.
+        checkForTasks();
+
     }
 
     @Override
@@ -233,13 +239,14 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                 @SuppressLint("NewApi")
                 @Override
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                    showEmptyStateView(false);
-                    showLoadingIndicator(false);
+
                     Task task = dataSnapshot.getValue(Task.class);
                     if(task!=null){
                         if(currentTaskList.equals("Due TodayID")){
                             try {
                                 if(checkDueDate(TASKS_DUE_TODAY,task.getDueDate())){
+                                    showLoadingIndicator(false);
+                                    showEmptyStateView(false);
                                     updateExpandableListView(task);
                                 }
                             } catch (ParseException e) {
@@ -250,6 +257,8 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                             try {
                                 if(checkDueDate(TASKS_DUE_TODAY,task.getDueDate())||
                                         checkDueDate(TASKS_DUE_WEEK,task.getDueDate())){
+                                    showLoadingIndicator(false);
+                                    showEmptyStateView(false);
                                     updateExpandableListView(task);
                                 }
                             } catch (ParseException e) {
@@ -288,10 +297,6 @@ public class SpecialTaskListActivity extends AppCompatActivity {
         }
 
         mAllTasksDatabaseReference.addChildEventListener(mChildEventListener);
-        if(taskGroups.size()==0){
-            showEmptyStateView(true);
-            showLoadingIndicator(false);
-        }
 
     }
 
@@ -486,6 +491,52 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                 if (taskList != null) {
                     taskCountInbox = taskList.getTaskNum();
                 }
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                System.out.println("The read failed: " + databaseError.getCode());
+            }
+        });
+    }
+    //Check for tasks, in order to correctly show the loading indicator
+    // and the EmptyStateTextView
+    private void checkForTasks(){
+        showLoadingIndicator(true);
+        mAllTasksDatabaseReference.addValueEventListener(new ValueEventListener() {
+            @SuppressLint("NewApi")
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                isEmpty=true;
+                for(DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    Task task = snapshot.getValue(Task.class);
+                    if (task != null && task.getDueDate() != null) {
+                        if (currentTaskList.equals("Due TodayID")) {
+                            try {
+                                if (checkDueDate(TASKS_DUE_TODAY, task.getDueDate())) {
+                                    isEmpty = false;
+                                }
+                            } catch (ParseException e) {
+                                e.printStackTrace();
+                            }
+                        } else {
+                            try {
+                                if (checkDueDate(TASKS_DUE_TODAY, task.getDueDate()) ||
+                                        checkDueDate(TASKS_DUE_WEEK, task.getDueDate())) {
+                                    isEmpty = false;
+                                }
+                            } catch (ParseException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }
+                if(isEmpty){
+                    showEmptyStateView(true);
+                    showLoadingIndicator(false);
+                }
+
 
             }
 
