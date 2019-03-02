@@ -12,6 +12,7 @@ import android.widget.EditText;
 
 
 public class NotesFragment extends Fragment{
+    //Indicator that the NotesFragment is attached - for appropriate onBackPressed responses
     private static boolean isAttached;
     //View references - TextEdit, buttons, etc.
     private EditText mNotes;

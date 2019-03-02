@@ -75,6 +75,7 @@ public class SpecialTaskListActivity extends AppCompatActivity {
     // More efficient than HashMap for mapping integers to objects
     private SparseArray<TaskGroup> taskGroups = new SparseArray<TaskGroup>();
 
+    //The ExpandableListView - to show multiple TaskList groups with their tasks
     private ExpandableListView listView;
 
     //Task unique integer ID (for adding tasks)
@@ -89,6 +90,10 @@ public class SpecialTaskListActivity extends AppCompatActivity {
 
     //Indicator whether the list is empty or not
     private boolean isEmpty;
+
+    //Flag to indicate the user moved a task to another TaskList
+    //Used in order to avoid task update bugs in the ExpandableListView
+    protected static boolean changeTaskListFlag;
 
 
     @Override
@@ -199,6 +204,8 @@ public class SpecialTaskListActivity extends AppCompatActivity {
         showLoadingIndicator(true);
 
 
+        //Set the listView and adapter - if we're not in Due Today TaskList,
+        //then there is no EditText for creating a new task, so we can expand the listView
         listView = findViewById(R.id.expandable_list_view);
         if(!currentTaskList.equals("Due TodayID")){
             ViewGroup.LayoutParams params = listView.getLayoutParams();
@@ -213,7 +220,6 @@ public class SpecialTaskListActivity extends AppCompatActivity {
 
         //Check for tasks - react appropriately if the TaskList is empty.
         checkForTasks();
-
     }
 
     @Override
@@ -233,24 +239,28 @@ public class SpecialTaskListActivity extends AppCompatActivity {
         detachDatabaseReadListener();
     }
 
+    //Attach the dataBaseReadListener - to get relevant tasks and update the UI
     private void attachDatabaseReadListener() {
         if (mChildEventListener == null) {
             mChildEventListener = new ChildEventListener() {
                 @SuppressLint("NewApi")
                 @Override
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-
+                    //Show relevant tasks according to the default TaskList we're in - today/week
+                    Log.d("wat", "onChildAdded: ");
                     Task task = dataSnapshot.getValue(Task.class);
                     if(task!=null){
                         if(currentTaskList.equals("Due TodayID")){
-                            try {
-                                if(checkDueDate(TASKS_DUE_TODAY,task.getDueDate())){
-                                    showLoadingIndicator(false);
-                                    showEmptyStateView(false);
-                                    updateExpandableListView(task);
+                            if(task.getDueDate()!=null){
+                                try {
+                                    if(checkDueDate(TASKS_DUE_TODAY,task.getDueDate())){
+                                        showLoadingIndicator(false);
+                                        showEmptyStateView(false);
+                                        updateExpandableListView(task);
+                                    }
+                                } catch (ParseException e) {
+                                    e.printStackTrace();
                                 }
-                            } catch (ParseException e) {
-                                e.printStackTrace();
                             }
                         }
                         else{
@@ -270,7 +280,8 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                 }
                 public void onChildChanged(DataSnapshot dataSnapshot, String s) {
                     Task task = dataSnapshot.getValue(Task.class);
-                    if(task!=null){
+                    if(task!=null &&changeTaskListFlag){
+                        //If we moved the task from one TaskList to another, update the UI
                         updateMovedExpandableListView(task);
                         Log.d("wat111", "onChildChanged: "+task.getTitle()+task.getTaskListTitle());
                     }
@@ -279,6 +290,7 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                 public void onChildRemoved(DataSnapshot dataSnapshot) {
                     Task task = dataSnapshot.getValue(Task.class);
                     if(task!=null){
+                        //if we deleted the task - update the UI
                         Log.d("wat", "onChildRemoved: "+task.getTitle());
                         removeFromExpandableListView(task);
                     }
@@ -302,7 +314,7 @@ public class SpecialTaskListActivity extends AppCompatActivity {
 
 
 
-
+    //Remove the databaseReadListener so we don't listen for new tasks while the app is paused
     private void detachDatabaseReadListener() {
         if (mChildEventListener != null) {
             mAllTasksDatabaseReference.removeEventListener(mChildEventListener);
@@ -312,6 +324,7 @@ public class SpecialTaskListActivity extends AppCompatActivity {
 
 
 
+    //Show emptyStateView - no relevant tasks due for that relevant TaskList period (today/week)
     private void showEmptyStateView(boolean b) {
         if (b) {
             mEmptyStateTextView.setVisibility(View.VISIBLE);
@@ -321,6 +334,7 @@ public class SpecialTaskListActivity extends AppCompatActivity {
         }
     }
 
+    //Show loading indicator
     private void showLoadingIndicator(boolean b) {
         if (b) {
             loadingIndicator.setVisibility(View.VISIBLE);
@@ -329,7 +343,7 @@ public class SpecialTaskListActivity extends AppCompatActivity {
         }
     }
 
-
+    //Open the TaskInfoFragment for this task
     public void getTaskInfo(Task currentTask) {
         //Open the TaskInfoFragment for this task
         TaskInfoFragment taskInfo = new TaskInfoFragment();
@@ -371,6 +385,7 @@ public class SpecialTaskListActivity extends AppCompatActivity {
         return true;
     }
 
+    //Respond to onBackPressed according to whether the NotesFragment or TaskInfoFragment are attached
     @Override
     public void onBackPressed() {
         if (NotesFragment.isAttached()) {
@@ -396,6 +411,8 @@ public class SpecialTaskListActivity extends AppCompatActivity {
         }
     }
 
+    //Update ExpandableListView with the new tasks - if the task is in a TaskList currently not shown
+    //Add that TaskList as a new group, and add this new task as it's child
     private void updateExpandableListView(Task currentTask){
         String taskListTitle=currentTask.getTaskListTitle();
         String taskListId=currentTask.getTaskListId();
@@ -417,6 +434,7 @@ public class SpecialTaskListActivity extends AppCompatActivity {
 
     }
 
+    //Remove the task from the ExpandableListView and update UI accordingly
     private void removeFromExpandableListView(Task currentTask) {
         String taskListTitle=currentTask.getTaskListTitle();
         int index=findTaskList(taskListTitle);
@@ -424,6 +442,22 @@ public class SpecialTaskListActivity extends AppCompatActivity {
         //TaskIndex won't be -1 because the task exists.
         int taskIndex=findTaskInTaskGroup(currentTask,tg);
         tg.tasks.remove(taskIndex);
+        if(tg.tasks.size()==0){ //If taskGroup is now empty, delete it.
+            if(index==0 && taskGroups.size()>1){
+                //If it's the upper taskGroup, change positions to prevent bug.
+                TaskGroup tg2=taskGroups.get(1);
+                listView.collapseGroup(0);
+                taskGroups.remove(0);
+                listView.collapseGroup(1);
+                taskGroups.remove(1);
+                taskGroups.append(0,tg2);
+                listView.expandGroup(0);
+                adapter.notifyDataSetChanged();
+                return;
+            }
+            listView.collapseGroup(index);
+            taskGroups.remove(index);
+        }
         adapter.notifyDataSetChanged();
     }
 
@@ -440,19 +474,24 @@ public class SpecialTaskListActivity extends AppCompatActivity {
 
     }
 
+
+    //Sets the new current TaskId number, for creating new tasks (it's an id that tracks the number
+    //of tasks created.
     private void setNewTaskId(int newTaskId){
-        //Get's which tasks to show - and sets the preferences accordingly
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putInt("taskIdNumber",newTaskId);
         editor.commit();
     }
 
+    //Update ExpandableListView when a task is moved from one TaskList to another
+    //update the UI accordingly
     private void updateMovedExpandableListView(Task currentTask) {
         String taskListTitle=currentTask.getTaskListTitle();
         String taskListId=currentTask.getTaskListId();
         int index=findTaskList(taskListTitle);
         //Definitely Wasn't in that TaskList before
         if(index==-1){
+            changeTaskListFlag=false;
             int position=taskGroups.size();
             TaskGroup tg=new TaskGroup(taskListTitle,taskListId);
             tg.tasks.add(currentTask);
@@ -471,9 +510,11 @@ public class SpecialTaskListActivity extends AppCompatActivity {
             tg.tasks.add(currentTask);
             adapter.notifyDataSetChanged();
             listView.expandGroup(index);
+            changeTaskListFlag=false;
         }
     }
 
+    //Find this task's index in a specific taskGroup
     private int findTaskInTaskGroup(Task currentTask,TaskGroup tg){
         for (int i=0;i<tg.tasks.size();i++){
             if(tg.tasks.get(i).getId().equals(currentTask.getId())){
@@ -483,6 +524,8 @@ public class SpecialTaskListActivity extends AppCompatActivity {
         return -1;
     }
 
+    //Add a listener to the number of tasks in Inbox - when we create a new task
+    //due for today in Due Today TaskList, update Inbox's number of tasks
     private void addTaskNumListenerInbox(){
         mTaskNumDatabaseReferenceInbox.addValueEventListener(new ValueEventListener() {
             @Override
@@ -547,9 +590,9 @@ public class SpecialTaskListActivity extends AppCompatActivity {
         });
     }
 
+    //Get's duedate filter (today/week/month) and check if current task's due date fits.
     @RequiresApi(api = Build.VERSION_CODES.N)
     private boolean checkDueDate(int dueWhen, Date dueDate) throws ParseException {
-        //Get's duedate filter (today/week/month) and check if current task's due date fits.
         Calendar currentCalendar = Calendar.getInstance();
         Calendar dueCalendar = Calendar.getInstance();
         currentCalendar.setTime(currentCalendar.getTime());

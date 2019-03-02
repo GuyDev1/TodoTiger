@@ -12,6 +12,7 @@ import com.example.guyerez.todotiger.R;
 
 public class SpinnerImageAdapter extends ArrayAdapter<Integer> {
 
+    //Relevant variables to display UI - text and image for each item
     private Integer[] images;
     private String[] text;
     private Context context;
@@ -33,6 +34,7 @@ public class SpinnerImageAdapter extends ArrayAdapter<Integer> {
         return getImageForPosition(position, convertView, parent);
     }
 
+    //Get the relevant text and image for this item and update UI accordingly
     private View getImageForPosition(int position, View convertView, ViewGroup parent) {
         LayoutInflater inflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View row = inflater.inflate(R.layout.spinner_priority_layout, parent, false);

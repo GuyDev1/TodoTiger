@@ -25,26 +25,31 @@ public class SettingsActivity extends AppCompatActivity {
             //Set preference screen
             setPreferencesFromResource(R.xml.preferences,rootKey);
 
-            //Setup preferences
+            //Setup user's available preferences
 
+            //Show createdDate in the Task UI
             Preference showCreated=findPreference("show_created_date");
             setPreference(showCreated);
 
+            //Show dueDate in the Task UI
             Preference showDue=findPreference("show_due_date");
             setPreference(showDue);
 
+            //Show completedDate in the Task UI
             Preference showCompleted=findPreference("show_completed_date");
             setPreference(showCompleted);
 
+            //Show Due Today default TaskList
             Preference showDueToday=findPreference("show_due_today");
             setPreference(showDueToday);
 
+            //Show Due This Week default TaskList
             Preference showDueWeek=findPreference("show_due_week");
             setPreference(showDueWeek);
         }
 
         /**
-         * Updates the changed preference summary
+         * Updates the changed preference summary - hidden or visible
          */
         @Override
         public boolean onPreferenceChange(Preference preference, Object value) {

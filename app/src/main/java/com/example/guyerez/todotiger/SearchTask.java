@@ -1,17 +1,10 @@
 package com.example.guyerez.todotiger;
 
-import android.annotation.TargetApi;
-import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.PersistableBundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.NavUtils;
@@ -20,11 +13,8 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.util.SparseArray;
-import android.view.ContextMenu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ExpandableListView;
 import android.widget.FrameLayout;
@@ -40,9 +30,6 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
 
 public class SearchTask extends AppCompatActivity {
 
@@ -71,6 +58,7 @@ public class SearchTask extends AppCompatActivity {
     // More efficient than HashMap for mapping integers to objects
     private SparseArray<TaskGroup> taskGroups = new SparseArray<TaskGroup>();
 
+    //The ExpandableListView - to show multiple TaskList groups with their tasks
     private ExpandableListView listView;
 
     @Override
@@ -100,6 +88,8 @@ public class SearchTask extends AppCompatActivity {
         mTaskSearchEditText = (EditText) findViewById(R.id.task_search);
 
 
+        //Add textChangedListener - when the user starts typing in the search box
+        //the search begins automatically and shows the relevant results for his query
         mTaskSearchEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -114,12 +104,15 @@ public class SearchTask extends AppCompatActivity {
             public void afterTextChanged(Editable editable) {
 
                 if (!editable.toString().isEmpty()) {
+                    //The query is not empty, start a new search and update UI
                     showLoadingIndicator(true);
                     showEmptyStateView(false);
                     taskGroups.clear();
                     adapter.notifyDataSetChanged();
                     searchTask(editable.toString());
                 } else {
+                    //The query is empty - show a blank screen not emptyStateView
+                    //because the user hasn't searched for anything yet
                     showEmptyStateView(false);
                     taskGroups.clear();
                     adapter.notifyDataSetChanged();
@@ -136,6 +129,7 @@ public class SearchTask extends AppCompatActivity {
         showLoadingIndicator(false);
 
 
+        //Initialize the listView and Adapter
          listView = findViewById(R.id.expandable_list_view);
          adapter = new ExpandableListAdapter(this,
                 taskGroups);
@@ -160,6 +154,7 @@ public class SearchTask extends AppCompatActivity {
     }
 
 
+    //Search for the user input in the search box, update UI accordingly
     private void searchTask(final String s) {
         Query query = mTaskDatabaseReference.orderByChild("title");
         query.addValueEventListener(new ValueEventListener() {
@@ -201,6 +196,7 @@ public class SearchTask extends AppCompatActivity {
     }
 
 
+    //Show emptyStateView - no tasks found.
     private void showEmptyStateView(boolean b) {
         if (b) {
             mEmptyStateTextView.setVisibility(View.VISIBLE);
@@ -210,6 +206,7 @@ public class SearchTask extends AppCompatActivity {
         }
     }
 
+    //Show loading indicator
     private void showLoadingIndicator(boolean b) {
         if (b) {
             loadingIndicator.setVisibility(View.VISIBLE);
@@ -219,8 +216,8 @@ public class SearchTask extends AppCompatActivity {
     }
 
 
+    //Open the TaskInfoFragment for this task
     public void getTaskInfo(Task currentTask) {
-        //Open the TaskInfoFragment for this task
         TaskInfoFragment taskInfo = new TaskInfoFragment();
         taskInfo.setCurrentTask(currentTask);
         android.support.v4.app.FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
@@ -260,6 +257,7 @@ public class SearchTask extends AppCompatActivity {
         return true;
     }
 
+    //Respond to onBackPressed according to whether the NotesFragment or TaskInfoFragment are attached
     @Override
     public void onBackPressed() {
         if (NotesFragment.isAttached()) {
@@ -285,11 +283,14 @@ public class SearchTask extends AppCompatActivity {
         }
     }
 
+    //Update ExpandableListView with the new tasks - if the task is in a TaskList currently not shown
+    //Add that TaskList as a new group, and add this new task as it's child
     private void updateExpandableListView(Task currentTask){
         String taskListTitle=currentTask.getTaskListTitle();
         String taskListId=currentTask.getTaskListId();
         int index=findTaskList(taskListTitle);
         if(index==-1){
+            //Need to add a new TaskList (taskGroup in listView)
             int position=taskGroups.size();
             TaskGroup tg=new TaskGroup(taskListTitle,taskListId);
             tg.tasks.add(currentTask);
@@ -298,6 +299,7 @@ public class SearchTask extends AppCompatActivity {
             listView.expandGroup(position);
         }
         else{
+            //Add task to relevant taskGroup already visible
             TaskGroup tg=taskGroups.get(index);
             tg.tasks.add(currentTask);
             adapter.notifyDataSetChanged();
@@ -317,9 +319,5 @@ public class SearchTask extends AppCompatActivity {
         return -1;
 
     }
-
-
-
-
 
 }

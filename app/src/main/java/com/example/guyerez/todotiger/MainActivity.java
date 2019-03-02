@@ -58,12 +58,20 @@ import static com.example.guyerez.todotiger.TaskActivity.TASKS_DUE_WEEK;
 
 public class MainActivity extends AppCompatActivity {
 
+    //Channel_ID for android notifications
     private static final String CHANNEL_ID = "123";
+
+    //constants used for initializing default TaskList's
     private static final int DEFAULT_INBOX = 0;
     private static final int DEFAULT_DUE_TODAY = 1;
     private static final int DEFAULT_DUE_WEEK = 2;
+
     final Context context = this;
+
+    //Constant to indicate the user signed in
     public static final int SIGN_IN = 1;
+
+    //The current user ID in FireBase
     private String currentUserId;
     private TaskListAdapter mTaskListAdapter;
     //TextView that is displayed when the list is empty//
@@ -272,6 +280,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    //Check if user signed-in successfully and react accordingly
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -288,6 +297,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //Create the optionsMenu
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
@@ -295,6 +305,7 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+    //Set optionMenu responses - sign_out, settings and search
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
@@ -319,6 +330,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        //Start authentication listener when app is resumed.
         mFirebaseAuth.addAuthStateListener(mAuthStateListener);
 
     }
@@ -326,6 +338,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
+        //When app is paused - remove auth listener, clear the adapter
+        //and detach the databaseReadListener
         if (mAuthStateListener != null) {
             mFirebaseAuth.removeAuthStateListener(mAuthStateListener);
         }
@@ -361,11 +375,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    //When the user signs out, clear the TaskListAdapter and detach the databaseReadListener
     private void onSignedOutCleanup() {
         mTaskListAdapter.clear();
         detachDatabaseReadListener();
     }
 
+    //Attach the dataBaseReadListener - to get relevant TaskLists and update the UI
     private void attachDatabaseReadListener() {
         if (mChildEventListener == null) {
             mChildEventListener = new ChildEventListener() {
@@ -406,7 +422,7 @@ public class MainActivity extends AppCompatActivity {
         mTaskListDatabaseReference.addChildEventListener(mChildEventListener);
 
     }
-
+    //Remove the databaseReadListener so we don't listen for new TaskLists while the app is paused
     private void detachDatabaseReadListener() {
         if (mChildEventListener != null) {
             mTaskListDatabaseReference.removeEventListener(mChildEventListener);
@@ -414,14 +430,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //Return the current logged in user
     private String getCurrentUserId() {
         return currentUserId;
     }
 
-    /**
-     * MENU
-     */
-
+    //Create contextMenu - when TaskLists are long clicked, enables the user to delete them
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
         if (v.getId() == R.id.task_list_view) {
@@ -437,6 +451,8 @@ public class MainActivity extends AppCompatActivity {
         Log.d("check", "" + taskListClicked.getTitle());
         switch (menuItem.getItemId()) {
             case 0:
+                //The user chose to delete this TaskList - react appropriately
+                //This option will also delete all the tasks related to this TaskList
                 if (taskListClicked.getId().equals("InboxID") || taskListClicked.getId().equals("Due TodayID")
                         || taskListClicked.getId().equals("Due This WeekID")) {
                     Toast.makeText(this, "Can't delete default Task List", Toast.LENGTH_LONG).show();
@@ -455,6 +471,8 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+    //When a taskList is deleted - delete all it's tasks (from allTasks list, direct descendants
+    //are deleted automatically
     private void removeFromAllTasks(final String taskListId) {
         final List<Task>tasksToDelete=new ArrayList<>();
         mAllTasksDatabaseReference.addValueEventListener(new ValueEventListener() {
@@ -501,6 +519,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //Create a new TaskList, update the DataBase, and open the TaskList so the user
+    //could enter new tasks immediately.
     private void createNewTaskList(String title) {
         Calendar calendar = Calendar.getInstance();
         Date creationDate = calendar.getTime();
@@ -510,8 +530,8 @@ public class MainActivity extends AppCompatActivity {
         openTaskList(taskList);
     }
 
+    //Start TaskActivity for the taskList the user chose to open
     private void openTaskList(TaskList currentTaskList) {
-
         //Update current TaskList in SharedPreferences
         SharedPreferences pref = getApplicationContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = pref.edit();
@@ -534,6 +554,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    //Initialize default TaskLists
     private void initDefaultTaskLists(String currentUserId) {
         createDefaultTaskList("Inbox", DEFAULT_INBOX);
         createDefaultTaskList("Due Today", DEFAULT_DUE_TODAY);
@@ -552,6 +573,7 @@ public class MainActivity extends AppCompatActivity {
         return currentData.getBoolean("defaultTasksCreated" + currentUserId, false);
     }
 
+    //Create the default TaskLists with an early date so they always show on top
     private void createDefaultTaskList(String taskListName, int defaultTaskName) {
         Log.d("wat", "createDefaultTaskList: ");
         Calendar calendar = Calendar.getInstance();
@@ -561,14 +583,16 @@ public class MainActivity extends AppCompatActivity {
         mTaskListDatabaseReference.child(taskListName + "ID").setValue(taskList);
     }
 
+    //Get Settings to indicate whether the user wants to see the default TaskLists
     private void initDefaultTaskListsPrefs() {
-        //Get Settings to indicate whether the user wants to see the default TaskLists
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
         showDueToday = settings.getBoolean("show_due_today", true);
         showDueWeek = settings.getBoolean("show_due_week", true);
 
     }
 
+    //Attach a databaseReadListener to check the current number of tasks associated with the
+    //default TaskLists - that is, update their task number in the UI
     private void attachDatabaseReadListenerDue() {
         mAllTasksDatabaseReference.addValueEventListener(new ValueEventListener() {
             @SuppressLint("NewApi")
@@ -606,9 +630,9 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    //Get's duedate filter (today/week/month) and check if current task's due date fits.
     @RequiresApi(api = Build.VERSION_CODES.N)
     private boolean checkDueDate(int dueWhen, Date dueDate) throws ParseException {
-        //Get's duedate filter (today/week/month) and check if current task's due date fits.
         Calendar currentCalendar = Calendar.getInstance();
         Calendar dueCalendar = Calendar.getInstance();
         currentCalendar.setTime(currentCalendar.getTime());

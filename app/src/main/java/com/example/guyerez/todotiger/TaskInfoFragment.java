@@ -91,8 +91,6 @@ public class TaskInfoFragment extends Fragment {
     private boolean dueFlag = false;
     private boolean remindDateFlag = false;
     private boolean remindTimeFlag = false;
-    private String currentUser;
-    private String thisTaskList;
 
 
     @Override
@@ -110,8 +108,8 @@ public class TaskInfoFragment extends Fragment {
 
         //Get current logged in user and the current TaskList from SharedPreferences
         final SharedPreferences currentData = getContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
-        currentUser = currentData.getString("userId", null);
-        thisTaskList = currentData.getString("currentTaskList", null);
+        String currentUser = currentData.getString("userId", null);
+        String thisTaskList = currentData.getString("currentTaskList", null);
 
         //set up Task DB references
         mTaskDatabaseReference = mFirebaseDatabase.getReference().child("users")
@@ -151,6 +149,7 @@ public class TaskInfoFragment extends Fragment {
             }
         });
 
+        //Save the changes made by the user to FirebaseDataBase
         mSaveChangesButton = rootView.findViewById(R.id.save_button);
         mSaveChangesButton.setOnClickListener(new View.OnClickListener() {
             @SuppressLint("NewApi")
@@ -299,10 +298,13 @@ public class TaskInfoFragment extends Fragment {
             }
         });
 
+        //Set task notes - if it's not null, update the textView with the user's notes
         mTaskNotes = rootView.findViewById(R.id.notes);
         if (currentTask.getNotes() != null) {
             mTaskNotes.setText(currentTask.getNotes());
         }
+        //When the user clicks the TaskNotes TextView - open the NotesFragment to enter notes
+        //more comfortably
         mTaskNotes.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -330,13 +332,14 @@ public class TaskInfoFragment extends Fragment {
         dueDate.setText(sdf.format(dueCalendar.getTime()));
     }
 
+    //Update the reminderDate label in the taskInfo UI
     private void updateReminderDateLabel() {
         String myFormat = "dd/MM/yyyy";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
 
         reminderDate.setText(sdf.format(remindDateCalendar.getTime()));
     }
-
+    //Update the reminderTime label in the taskInfo UI
     private void updateReminderTimeLabel() {
         String myFormat = "HH:mm";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
@@ -348,6 +351,7 @@ public class TaskInfoFragment extends Fragment {
         this.currentTask = task;
     }
 
+    //Set a new reminder for this task
     public static void setReminder(Context context, Class<?> cls, Date remindDate, Date remindTime, Task task, DatabaseReference ref) {
         //Set the remindCalendar
         Calendar remindCalendar = Calendar.getInstance();
@@ -364,7 +368,6 @@ public class TaskInfoFragment extends Fragment {
 
 
         // Enable a receiver
-
         ComponentName receiver = new ComponentName(context, cls);
         PackageManager pm = context.getPackageManager();
 
@@ -372,10 +375,11 @@ public class TaskInfoFragment extends Fragment {
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                 PackageManager.DONT_KILL_APP);
 
-        //Set reminderDisplayed to false - this is a new reminder
+        //Set task's reminderDisplayed property to false - this is a new reminder
         ref.child("reminderDisplayed").setValue(false);
 
-
+        //Start the reminder AlarmManager intent - to provide the notification
+        //relevant details about this task
         Intent intent = new Intent(context, cls);
         intent.putExtra("taskTitle", task.getTitle());
         intent.putExtra("taskIntId", task.getIntId());
@@ -383,6 +387,7 @@ public class TaskInfoFragment extends Fragment {
         intent.putExtra("taskList", task.getTaskListId());
         PendingIntent pendingIntent = PendingIntent.getBroadcast(context, task.getIntId(), intent, PendingIntent.FLAG_UPDATE_CURRENT);
         AlarmManager am = (AlarmManager) context.getSystemService(ALARM_SERVICE);
+        //Set up the relevant time to show the reminder - according to the date the user set
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, remindCalendar.getTimeInMillis(), pendingIntent);
         } else {
@@ -391,13 +396,14 @@ public class TaskInfoFragment extends Fragment {
 
     }
 
+    //Handles showing the notification itself in the user's screen
     public static void showReminderNotification(Context context, Class<?> cls, String title, int taskIntId) {
-
         Intent notificationIntent = new Intent(context, cls);
         notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         PendingIntent pendingIntent = PendingIntent.getActivity(context, taskIntId, notificationIntent, 0);
 
 
+        //Build the notification's UI and info
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context, "123")
                 .setSmallIcon(R.drawable.ic_stat_name)
                 .setLargeIcon(BitmapFactory.decodeResource(context.getResources(),
@@ -414,9 +420,9 @@ public class TaskInfoFragment extends Fragment {
 
     }
 
+    //Cancel a task reminder
     public static void cancelReminder(Context context, Class<?> cls, int taskIntId) {
         // Disable a receiver
-
         ComponentName receiver = new ComponentName(context, cls);
         PackageManager pm = context.getPackageManager();
 
@@ -437,6 +443,7 @@ public class TaskInfoFragment extends Fragment {
         super.onAttach(context);
     }
 
+    //Set the text to be shown in mTaskNotes TextView
     public void setNotesText(String text) {
         mTaskNotes.setText(text);
     }

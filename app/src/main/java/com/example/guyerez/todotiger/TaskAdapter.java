@@ -66,15 +66,11 @@ public class TaskAdapter extends ArrayAdapter<Task> {
     public static final int TASKS_COMPLETED_MONTH = 8;
 
     //Context to access TaskActivity method
-    private Context mContext;
+    private Activity activity;
 
     //Get a calendar instance for setting dates
     private Calendar calendar;
     private String currentUser;
-    private String thisTaskList;
-
-    //Current completion date
-    private Date completionDate;
 
     //Show created/due/completed on Task item UI
     public static boolean showCreated;
@@ -85,21 +81,19 @@ public class TaskAdapter extends ArrayAdapter<Task> {
     private MenuBuilder menuBuilder;
     private MenuPopupHelper optionsMenu;
 
-    //Define relevant UI components
-    private ImageView priorityImage;
 
 
     /**
      * Create a new {@link TaskAdapter} object.
      *
-     * @param context is the current context (i.e. Activity) that the adapter is being created in.
+     * @param activity is the current activity that the adapter is being created in.
      * @param tasks is the list of {@link Task}s to be displayed.
      */
 
 
-    public TaskAdapter(Context context, ArrayList<Task> tasks) {
-        super(context, 0, tasks);
-        this.mContext=context;
+    public TaskAdapter(Activity activity, ArrayList<Task> tasks) {
+        super(activity, 0, tasks);
+        this.activity=activity;
         //Initialize sharedPreferences
         initSharedPreferences();
         //Initialize calendar for task's dates and for using the Calendar
@@ -126,7 +120,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         // Get the task's title from the currentTask object and set it in the text view
         titleTextView.setText(currentTask.getTitle());
         //If the task is completed - title Strikethrough
-        titleTextView.setBackgroundResource(strikeCompleted(currentTask.getCompleted()));
+        titleTextView.setBackgroundResource(AdapterUtil.strikeCompleted(currentTask.getCompleted()));
         //Set Title height to fit date TextView's appropriately
         if(showCreated || showDue || showCompleted){
             titleTextView.setHeight((int)TypedValue.applyDimension
@@ -143,7 +137,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         //Initialize the creation date TextView in the task_item.xml layout with the ID creation_date
         TextView creationDateTextView = (TextView) listItemView.findViewById(R.id.creation_date);
         //Get the task's creation date from the currentTask object and set it in the text view
-        creationDateTextView.setText(getCreationDate(currentTask));
+        creationDateTextView.setText(AdapterUtil.getCreationDate(currentTask,calendar));
         if(!showCreated){
             creationDateTextView.setVisibility(View.GONE);
         }
@@ -152,14 +146,17 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         //Initialize the creation date TextView in the task_item.xml layout with the ID creation_date
          final TextView dueDateTextView = (TextView) listItemView.findViewById(R.id.due_date);
         //Get the task's creation date from the currentTask object and set it in the text view
-        dueDateTextView.setText(getDueOrCompletedDate(currentTask,dueDateTextView,null));
+        dueDateTextView.setText(AdapterUtil.getDueOrCompletedDate(currentTask,dueDateTextView,calendar,activity,null));
         if(!showDue){
             dueDateTextView.setVisibility(View.GONE);
         }
 
 
-        priorityImage=listItemView.findViewById(R.id.imageView);
-        priorityImage.setImageResource(getTaskPriorityImage(currentTask));
+
+        // Get the Task's priorityImage and allow the user to change the task's priority
+        // by clicking on it
+        final ImageView priorityImage=listItemView.findViewById(R.id.imageView);
+        priorityImage.setImageResource(AdapterUtil.getTaskPriorityImage(currentTask));
         priorityImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -174,13 +171,13 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                     public boolean onMenuItemSelected(MenuBuilder menu, MenuItem item) {
                         switch (item.getItemId()) {
                             case R.id.priority_urgent:
-                                setPriority(PRIORITY_URGENT,currentTask);
+                                AdapterUtil.setPriority(PRIORITY_URGENT,currentTask,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage);
                                 return true;
                             case R.id.priority_high:
-                                setPriority(PRIORITY_HIGH,currentTask);
+                                AdapterUtil.setPriority(PRIORITY_HIGH,currentTask,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage);
                                 return true;
                             case R.id.priority_default:
-                                setPriority(PRIORITY_DEFAULT,currentTask);
+                                AdapterUtil.setPriority(PRIORITY_DEFAULT,currentTask,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage);
                                 return true;
                             default:
                                 return false;
@@ -204,9 +201,9 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                 initDatabaseReferences(currentTask);
                     if (isChecked) {
                         //Update the Task as Checked (completed) in the DB and UI
-                        updateTaskChecked(titleTextView,dueDateTextView,currentTask);
+                        AdapterUtil.updateTaskChecked(titleTextView,dueDateTextView,currentTask,calendar,mTaskDatabaseReference,mAllTasksDatabaseReference,activity,showCompleted);
                         //cancel task's reminder if it had one, since it's completed
-                        cancelTaskReminder(currentTask);
+                        AdapterUtil.cancelTaskReminder(currentTask,activity);
                         //After a small delay for better animation effect
                         //Remove the task from current adapter if it's not in SHOW_ALL_TASKs
                         // Since the user completed the task
@@ -216,9 +213,9 @@ public class TaskAdapter extends ArrayAdapter<Task> {
 
                     } else {
                         //Update the Task as unChecked (not completed) in the DB and UI
-                        updateTaskUnchecked(titleTextView,dueDateTextView,currentTask);
+                        AdapterUtil.updateTaskUnchecked(titleTextView,dueDateTextView,currentTask,mTaskDatabaseReference,mAllTasksDatabaseReference,calendar,activity);
                         //Reset the reminder if it had any
-                        resetTaskReminder(currentTask);
+                        AdapterUtil.resetTaskReminder(currentTask,activity,mAllTasksDatabaseReference);
                         //If we're not in ALL_TASKS, we must be in SHOW_COMPLETED if we can un-complete the task
                         if(TaskActivity.tasksToShow!=SHOW_ALL_TASKS){
                             removeCompletedTaskAnim(currentTask);
@@ -228,15 +225,16 @@ public class TaskAdapter extends ArrayAdapter<Task> {
             }
 
         );
+        //When the user clicks the task - enter the taskInfoFragment
         titleTextView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(mContext instanceof TaskActivity){
+                if(activity instanceof TaskActivity){
                     //Use the TaskActivity getTaskInfo method to start TaskInfoFragment
-                    ((TaskActivity)mContext).getTaskInfo(currentTask);
+                    ((TaskActivity)activity).getTaskInfo(currentTask);
                 }
-                if(mContext instanceof SearchTask){
-                    ((SearchTask)mContext).getTaskInfo(currentTask);
+                if(activity instanceof SearchTask){
+                    ((SearchTask)activity).getTaskInfo(currentTask);
                 }
 
             }
@@ -245,48 +243,6 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         // Return the whole list item layout (containing 3 text views and 1 checkbox) so that it can be shown in the ListView.
         return listItemView;
 
-    }
-    private int strikeCompleted(boolean completed){
-        if (completed){
-            return R.drawable.strike_through;
-        }
-        else{
-            return R.drawable.task_clicked;
-        }
-    }
-
-    private String getDueOrCompletedDate(Task currentTask,TextView dueDateTextView, Boolean... currentlyCompleted){
-        Boolean currentlyComplete=null;
-        String myFormat = "dd/MM/yyyy";
-        SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
-        if(currentlyCompleted!=null){
-            currentlyComplete=currentlyCompleted[0];
-        }
-
-        if(currentlyComplete!=null){
-            if(currentlyComplete==Boolean.TRUE){
-                dueDateTextView.setTextColor(Color.parseColor("#000000"));
-                dueDateTextView.setAlpha(0.54f);
-                return "Completed: "+sdf.format(calendar.getTime());
-            }
-            else{
-                return getDueDate(currentTask.getDueDate(),dueDateTextView);
-            }
-
-        }
-        if(currentTask.getCompleted()){
-            dueDateTextView.setTextColor(Color.parseColor("#000000"));
-            dueDateTextView.setAlpha(0.54f);
-            //If we completed the task through search, set the current date to prevent a NullPointerException
-            if(currentTask.getCompletionDate()==null){
-                return "Completed: "+sdf.format(completionDate);
-            }
-            return "Completed: "+sdf.format(currentTask.getCompletionDate());
-        }
-        else{
-            return getDueDate(currentTask.getDueDate(),dueDateTextView);
-
-        }
     }
 
     @Override
@@ -300,6 +256,9 @@ public class TaskAdapter extends ArrayAdapter<Task> {
             @Override
             public int compare(Task o1, Task o2) {
 
+                if(o1.getCreationDate()==null || o2.getCreationDate()==null){
+                    return 0;
+                }
                 return o1.getCreationDate().compareTo(o2.getCreationDate());
             }
         });
@@ -351,74 +310,6 @@ public class TaskAdapter extends ArrayAdapter<Task> {
 
     }
 
-    private String getCreationDate(Task currentTask){
-        int dayDifference=
-                ((int)((calendar.getTime().getTime()/(24*60*60*1000))
-                        -(int)(currentTask.getCreationDate().getTime()/(24*60*60*1000))));
-        switch (dayDifference){
-            case 0:
-                return "Created today";
-            case 1:
-                return "Created yesterday";
-            default:
-                return String.format(Locale.getDefault(),"Created %d days ago",dayDifference);
-
-        }
-
-    }
-    private String getDueDate(Date dueDate,TextView dueDateTextView){
-        if(dueDate!=null){
-            int dayDifference=
-                    ((int)((dueDate.getTime()/(24*60*60*1000))
-                            -(int)(calendar.getTime().getTime()/(24*60*60*1000))));
-            if(dayDifference>=0){
-                switch (dayDifference) {
-                    case 0:
-                        dueDateTextView.setAlpha(1);
-                        dueDateTextView.setTextColor(ContextCompat.getColor(getContext(),R.color.green));
-                        return "Due today";
-                    case 1:
-                        dueDateTextView.setAlpha(1);
-                        return "Due tomorrow";
-                    default:
-                        dueDateTextView.setTextColor(Color.parseColor("#000000"));
-                        dueDateTextView.setAlpha(0.54f);
-                        return String.format(Locale.getDefault(), "Due in %d days", dayDifference);
-                }
-            }
-            else{
-                 dueDateTextView.setTextColor(ContextCompat.getColor(getContext(),R.color.red));
-                 dueDateTextView.setAlpha(1);
-                 if(dayDifference==-1){
-                     return "Due yesterday";
-                 }
-                 else{
-                     return String.format(Locale.getDefault(), "Due %d days ago", -dayDifference);
-                 }
-
-            }
-
-        }
-        else{
-            dueDateTextView.setTextColor(Color.parseColor("#000000"));
-            dueDateTextView.setAlpha(0.54f);
-            return "Due: ";
-        }
-
-
-    }
-    public int getTaskPriorityImage(Task currentTask){
-        switch (currentTask.getPriority()){
-            case PRIORITY_URGENT:
-                return R.mipmap.ic_launcher_round;
-            case PRIORITY_HIGH:
-                return R.mipmap.ic_launcher_foreground;
-            default:
-                break;
-        }
-        return R.mipmap.ic_launcher; //Default priority icon
-    }
-
     private void initDatabaseReferences(Task task){
         mTaskDatabaseReference=mFirebaseDatabase.getReference()
                 .child("users").child(currentUser).child("TaskLists")
@@ -428,24 +319,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                 .child("allTasks").child(task.getId());
     }
 
-    private void updateTaskChecked(TextView title,TextView dueDateTextView,Task task) {
-        completionDate =calendar.getTime();
-        title.setBackgroundResource(R.drawable.strike_through);
-        mTaskDatabaseReference.child("completed").setValue(true);
-        mTaskDatabaseReference.child("completionDate").setValue(completionDate);
-        mAllTasksDatabaseReference.child("completed").setValue(true);
-        mAllTasksDatabaseReference.child("completionDate").setValue(completionDate);
-        if(showCompleted){
-            dueDateTextView.setText(getDueOrCompletedDate(task,dueDateTextView,Boolean.TRUE));
-            dueDateTextView.setVisibility(View.VISIBLE);
-        }
-    }
 
-    private void cancelTaskReminder(Task task) {
-        if(task.getReminderDate()!=null){
-            TaskInfoFragment.cancelReminder(getContext(),AlarmReceiver.class,task.getIntId());
-        }
-    }
 
     //After a small delay for better animation effect
     //Remove the task from current adapter if it's not in SHOW_ALL_TASKs
@@ -460,21 +334,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
 
     }
 
-    private void updateTaskUnchecked(TextView title, TextView dueDateTextView, Task task) {
-        title.setBackgroundResource(R.drawable.task_clicked);
-        mTaskDatabaseReference.child("completed").setValue(false);
-        mTaskDatabaseReference.child("completionDate").setValue(null);
-        mAllTasksDatabaseReference.child("completed").setValue(false);
-        mAllTasksDatabaseReference.child("completionDate").setValue(null);
-        dueDateTextView.setText(getDueOrCompletedDate(task,dueDateTextView,Boolean.FALSE));
-    }
 
-    private void resetTaskReminder(Task task) {
-        if(task.getReminderDate()!=null && task.getReminderTime()!=null){
-            TaskInfoFragment.setReminder(getContext(),AlarmReceiver.class,task.getReminderDate(),
-                    task.getReminderTime(),task,mAllTasksDatabaseReference);
-        }
-    }
 
     private void initSharedPreferences(){
         //Get Settings for Task UI preferences
@@ -485,7 +345,6 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         //Get current logged in user and the current TaskList from SharedPreferences
         final SharedPreferences currentData=getContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
         currentUser=currentData.getString("userId",null);
-        thisTaskList=currentData.getString("currentTaskList",null);
     }
 
     private void initializeCalendar() {
@@ -504,26 +363,5 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         optionsMenu.setForceShowIcon(true);
     }
 
-    private void setPriority(int priorityLevel,Task task) {
-        mTaskDatabaseReference.child("priority").setValue(priorityLevel);
-        mAllTasksDatabaseReference.child("priority").setValue(priorityLevel);
-        task.setPriority(priorityLevel); //Update currentTask - keeping taskInfoFragment up to date
-        setPriorityImage(priorityLevel);//Updating the image to show instant change of priority
 
-    }
-
-    private void setPriorityImage(int priorityLevel){
-        switch(priorityLevel){
-            case PRIORITY_URGENT:
-                priorityImage.setImageResource(R.mipmap.ic_launcher);
-                break;
-            case PRIORITY_HIGH:
-                priorityImage.setImageResource(R.mipmap.ic_launcher_foreground);
-                break;
-            case PRIORITY_DEFAULT:
-                priorityImage.setImageResource(R.mipmap.ic_launcher);
-                break;
-        }
-
-    }
 }

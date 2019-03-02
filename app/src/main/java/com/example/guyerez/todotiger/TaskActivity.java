@@ -57,6 +57,7 @@ public class TaskActivity extends AppCompatActivity {
     final Context context = this;
     //The current TaskAdapter
     private TaskAdapter mTaskAdapter;
+    //This TaskList's task count (number of tasks in TaskList)
     private int taskCount;
     // TextView that is displayed when the list is empty //
     private TextView mEmptyStateTextView;
@@ -144,13 +145,10 @@ public class TaskActivity extends AppCompatActivity {
         // Initialize Firebase components
         mFirebaseDatabase = FirebaseDatabase.getInstance();
 
-
-
         // Initialize references to views
 
         mTaskEditText = (EditText) findViewById(R.id.task_edit_text);
         mTaskAddButton = (Button) findViewById(R.id.add_task_button);
-
 
         // Enable add button when input is not empty
         mTaskEditText.addTextChangedListener(new TextWatcher() {
@@ -309,6 +307,7 @@ public class TaskActivity extends AppCompatActivity {
 
     }
 
+    //Attach the dataBaseReadListener - to get relevant tasks and update the UI
     private void attachDatabaseReadListener() {
         if (mChildEventListener == null) {
             mChildEventListener = new ChildEventListener() {
@@ -320,6 +319,8 @@ public class TaskActivity extends AppCompatActivity {
                     loadingIndicator.setVisibility(View.GONE);
                     Task task = dataSnapshot.getValue(Task.class);
                     switch (tasksToShow){
+                        //Check user's preferences on which tasks to show - all/due/completed etc
+                        //Update UI accordingly
                         case SHOW_ALL_TASKS:
 
                             mTaskAdapter.add(task);
@@ -424,6 +425,7 @@ public class TaskActivity extends AppCompatActivity {
         mTaskDatabaseReference.addChildEventListener(mChildEventListener);
 
     }
+    //Remove the databaseReadListener so we don't listen for new tasks while the app is paused
     private void detachDatabaseReadListener() {
         if (mChildEventListener != null) {
             mTaskDatabaseReference.removeEventListener(mChildEventListener);
@@ -431,10 +433,8 @@ public class TaskActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * MENU
-     */
-
+    //ContextMenu responds to long click on tasks - show the user the options - info (taskInfoFragment)
+    //Move to - move this task to a different TaskList, and delete
     @Override
     public void onCreateContextMenu(ContextMenu menu,View v, ContextMenu.ContextMenuInfo menuInfo){
         if (v.getId() == R.id.task_list_view){
@@ -460,15 +460,15 @@ public class TaskActivity extends AppCompatActivity {
 
             case 1:
                 //Pop a dialog and allow the user to choose a TaskList to move the current task to
-                getTaskLists();
-                setTaskMoveDialog();
-                dialog.show();
-                moveTaskToSelectedList(taskClicked);
+                AdapterUtil.getTaskLists(taskClicked,mChildEventListener2,mTaskListDatabaseReference);
+                AdapterUtil.setTaskMoveDialog(this);
+                AdapterUtil.moveTaskToSelectedList(taskClicked,currentUser,mTaskDatabaseReference,
+                        mFirebaseDatabase,mAllTasksDatabaseReference,this,mTaskAdapter);
                 break;
 
             case 2:
                 //Confirm delete and perform the task's deletion
-                confirmDeleteDialog(taskClicked);
+                AdapterUtil.confirmDeleteDialog(taskClicked,this,mTaskDatabaseReference,mAllTasksDatabaseReference,mTaskAdapter,mTaskNumDatabaseReference);
                 break;
 
 
@@ -568,8 +568,8 @@ public class TaskActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    //Open the TaskInfoFragment for this task
     public void getTaskInfo(Task currentTask){
-        //Open the TaskInfoFragment for this task
         TaskInfoFragment taskInfo = new TaskInfoFragment();
         taskInfo.setCurrentTask(currentTask);
         android.support.v4.app.FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
@@ -600,9 +600,9 @@ public class TaskActivity extends AppCompatActivity {
         editor.commit();
     }
 
+    //Get's duedate filter (today/week/month) and check if current task's due date fits.
     @RequiresApi(api = Build.VERSION_CODES.N)
     private boolean checkDueDate(int dueWhen, Date dueDate) throws ParseException {
-        //Get's duedate filter (today/week/month) and check if current task's due date fits.
         Calendar currentCalendar = Calendar.getInstance();
         Calendar dueCalendar = Calendar.getInstance();
         currentCalendar.setTime(currentCalendar.getTime());
@@ -639,9 +639,9 @@ public class TaskActivity extends AppCompatActivity {
                 return false;
         }
 
+    //Get's completedDate filter (today/week/month) and check if current task's completion date fits.
     @RequiresApi(api = Build.VERSION_CODES.N)
     private boolean checkCompletionDate(int completedWhen, Date completedDate) throws ParseException {
-        //Get's completedDate filter (today/week/month) and check if current task's completion date fits.
         Calendar currentCalendar = Calendar.getInstance();
         Calendar completedCalendar = Calendar.getInstance();
         currentCalendar.setTime(currentCalendar.getTime());
@@ -678,6 +678,8 @@ public class TaskActivity extends AppCompatActivity {
         return false;
     }
 
+
+    //Respond to onBackPressed according to whether the NotesFragment or TaskInfoFragment are attached
     @Override
     public void onBackPressed() {
         if(NotesFragment.isAttached()) {
@@ -705,174 +707,6 @@ public class TaskActivity extends AppCompatActivity {
 
 
         }
-
-
-    // "fromPath" and "toPath" are like directories in the DB - we move the task from one to the other.
-    private void moveTaskFireBase(final DatabaseReference fromPath, final DatabaseReference toPath, final String key) {
-        fromPath.child(key).addListenerForSingleValueEvent(new ValueEventListener() {
-            // Now "DataSnapshot" holds the key and the value at the "fromPath".
-            // So we copy it and transfer it to "toPath"
-            //Then we delete the current task in "fromPath"
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                toPath.child(dataSnapshot.getKey())
-                        .setValue(dataSnapshot.getValue(), new DatabaseReference.CompletionListener() {
-                            @Override
-                            public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-                                if (databaseError == null) {
-                                    Log.i("TaskActivity", "onComplete: success");
-                                    // In order to complete the move, we erase the original copy
-                                    // by assigning null as its value.
-                                    fromPath.child(key).setValue(null);
-
-                                }
-                                else {
-                                    Log.e("TaskActivity", "onComplete: failure:" + databaseError.getMessage() + ": "
-                                            + databaseError.getDetails());
-                                }
-                            }
-                        });
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                Log.e("TaskActivity", "onCancelled: " + databaseError.getMessage() + ": "
-                        + databaseError.getDetails());
-            }
-        });
-    }
-
-    private void getTaskLists(){
-        //Starts a childEventListener to get the list of TaskLists
-        mChildEventListener2 = new ChildEventListener() {
-            @Override
-            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-
-                TaskList taskList = dataSnapshot.getValue(TaskList.class);
-                //Don't show current TaskList in the move-to ListView (you're already there)
-                if(isRelevantTaskList(taskList,thisTaskList)) {
-                    mTaskListAdapter.add(taskList);
-                }
-            }
-            public void onChildChanged(DataSnapshot dataSnapshot, String s) {}
-            public void onChildRemoved(DataSnapshot dataSnapshot) {
-
-            }
-            public void onChildMoved(DataSnapshot dataSnapshot, String s) {}
-            public void onCancelled(DatabaseError databaseError) {}
-        };
-        mTaskListDatabaseReference.addChildEventListener(mChildEventListener2);
-    }
-    private void setTaskMoveDialog(){
-        //Initialize TaskList Array, ListView and Adapter for the popup dialog ListView
-        final ArrayList<TaskList> taskLists = new ArrayList<TaskList>();
-        dialog = new Dialog(TaskActivity.this,R.style.CustomDialog);
-        dialog.setContentView(R.layout.move_task_dialog);
-        dialog.setTitle("Choose a TaskList");
-        dialog.getWindow().getAttributes().windowAnimations = R.style.DialogTheme;
-        taskListsView= (ListView) dialog.findViewById(R.id.List);
-        // Create an {@link TaskListAdapter}, whose data source is a list of {@link TaskList}s.
-        mTaskListAdapter = new TaskListAdapter(this, taskLists);
-        taskListsView.setAdapter(mTaskListAdapter);
-    }
-    private void moveTaskToSelectedList(final Task task){
-        //Initialize an onItemClickListener to allow the user to choose a TaskList
-        //And then move the chosen task into that TaskList
-        taskListsView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-                // Find the current task list that was clicked on
-                TaskList currentTaskList = mTaskListAdapter.getItem(position);
-
-                //get the current task list's ID and title
-                currentTaskListId=currentTaskList.getId();
-                currentTaskListTitle=currentTaskList.getTitle();
-                //Get references for that specific TaskList and the number of tasks in it
-                mTaskDatabaseReference2=mFirebaseDatabase.getReference().child("users")
-                        .child(currentUser).child("TaskLists")
-                        .child(currentTaskListId).child("tasks");
-                mTaskNumDatabaseReference2=mFirebaseDatabase.getReference().child("users")
-                        .child(currentUser).child("TaskLists")
-                        .child(currentTaskListId);
-
-                //Move the task inside the DB to another TaskList
-                moveTaskFireBase(mTaskDatabaseReference,mTaskDatabaseReference2,task.getId());
-                //Update the task's current TaskList ID and title
-                mTaskDatabaseReference2.child(task.getId()).child("taskListId").setValue(currentTaskListId);
-                mAllTasksDatabaseReference.child(task.getId()).child("taskListId").setValue(currentTaskListId);
-                mTaskDatabaseReference2.child(task.getId()).child("taskListTitle").setValue(currentTaskListTitle);
-                mAllTasksDatabaseReference.child(task.getId()).child("taskListTitle").setValue(currentTaskListTitle);
-
-                //Set flag to true to avoid an infinite loop while updating the taskNum for that TaskList
-                flag=true;
-                mTaskNumDatabaseReference2.addValueEventListener(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        taskCount2 =dataSnapshot.getValue(TaskList.class).getTaskNum();
-                        if(flag) {
-                            flag=false;
-                            mTaskNumDatabaseReference2.child("taskNum").setValue(taskCount2 + 1);
-                        }
-
-
-
-
-                    }
-
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {
-                        System.out.println("The read failed: " + databaseError.getCode());
-                    }
-                });
-
-                //Remove the task from the current TaskAdapter and dismiss the dialog
-                mTaskAdapter.remove(task);
-                dialog.dismiss();
-                Toast.makeText(TaskActivity.this,"Task moved!", Toast.LENGTH_LONG).show();
-
-            }
-        });
-
-    }
-
-    private void confirmDeleteDialog(final Task taskClicked){
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        //Set the title
-        builder.setTitle("Delete this task?");
-        // Add the buttons
-        builder.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
-                //Delete the selected task and cancel the reminder if it had one
-                mTaskDatabaseReference.child(taskClicked.getId()).removeValue();
-                mAllTasksDatabaseReference.child(taskClicked.getId()).removeValue();
-                mTaskAdapter.remove(taskClicked);
-                if(taskClicked.getReminderDate()!=null){
-                    TaskInfoFragment.cancelReminder(context,AlarmReceiver.class,taskClicked.getIntId());
-                }
-                Toast.makeText(TaskActivity.this, "Task deleted!", Toast.LENGTH_LONG).show();
-            }
-        });
-        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
-                // User cancelled the dialog
-                dialog.cancel();
-            }
-        });
-
-        // Create the AlertDialog
-        AlertDialog deleteDialog = builder.create();
-        deleteDialog.getWindow().getAttributes().windowAnimations = R.style.DialogTheme;
-        deleteDialog.show();
-    }
-
-    private boolean isRelevantTaskList(TaskList taskList,String currentTaskList) {
-        if(taskList.getId().equals(currentTaskList ) || taskList.getId().equals("Due TodayID")
-                ||taskList.getId().equals("Due This WeekID")){
-            return false;
-        }
-        return true;
-    }
-
     }
 
 

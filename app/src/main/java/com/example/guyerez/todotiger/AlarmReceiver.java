@@ -17,33 +17,34 @@ import java.util.Calendar;
 
 public class AlarmReceiver extends BroadcastReceiver  {
 
+
+    //FireBase variables to access DB
     private ChildEventListener mChildEventListener;
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mTaskDatabaseReference;
-    private Calendar calendar;
-
-
 
     @Override
     public void onReceive(final Context context, Intent intent) {
+
+        //Get FireBase Instance
         mFirebaseDatabase = FirebaseDatabase.getInstance();
 
         //Get user currently logged in
         SharedPreferences sp=context.getSharedPreferences("MyPref", Context.MODE_PRIVATE);
         String currentUser=sp.getString("userId",null);
 
+        //Get the DB reference for this specific user and his tasks
         mTaskDatabaseReference=mFirebaseDatabase.getReference().child("users").child(currentUser).child("allTasks");
 
         if (intent.getAction() != null && context != null) {
             if (intent.getAction().equals("android.intent.action.BOOT_COMPLETED")) {
                 //Reinstate all active reminders.
-                calendar=Calendar.getInstance();
-                attachTaskDatabaseReadListener(context,currentUser);
+                attachTaskDatabaseReadListener(context);
 
             }
         }
         else{
-            //Trigger the notification
+            //Trigger the notification and set the relevant notification details.
             Bundle extras = intent.getExtras();
             String taskTitle = "Error, no task title!";
             int taskIntId=-1;
@@ -60,9 +61,11 @@ public class AlarmReceiver extends BroadcastReceiver  {
                 editor.commit();
             }
 
+            //Show the notification with the relevant task's details.
             TaskInfoFragment.showReminderNotification(context, TaskActivity.class, taskTitle,taskIntId);
             //Set the task's reminderDisplayed to true - the user presumably saw the reminder
             String taskId=extras.getString("taskId");
+            //Update that the reminder was displayed (so it wouldn't be displayed again)
             mTaskDatabaseReference.child(taskId).child("reminderDisplayed").setValue(true);
         }
 
@@ -77,7 +80,7 @@ public class AlarmReceiver extends BroadcastReceiver  {
 
 
 
-    private void attachTaskDatabaseReadListener(final Context context,String userId) {
+    private void attachTaskDatabaseReadListener(final Context context) {
         mChildEventListener = new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
@@ -85,6 +88,7 @@ public class AlarmReceiver extends BroadcastReceiver  {
                 //Check if the task has a reminder and if it had been displayed already
                 if(task.getReminderDate()!=null && task.getReminderTime()!=null){
                     if(!task.getReminderDisplayed()){
+                        //Set the reminder
                         TaskInfoFragment.setReminder(context,AlarmReceiver.class,task.getReminderDate(),
                                 task.getReminderTime(),task,mTaskDatabaseReference.child(task.getId()));
                     }
