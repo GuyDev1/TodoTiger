@@ -249,9 +249,8 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                     //Show relevant tasks according to the default TaskList we're in - today/week
                     Log.d("wat", "onChildAdded: ");
                     Task task = dataSnapshot.getValue(Task.class);
-                    if(task!=null){
+                    if(task!=null && task.getDueDate()!=null){
                         if(currentTaskList.equals("Due TodayID")){
-                            if(task.getDueDate()!=null){
                                 try {
                                     if(checkDueDate(TASKS_DUE_TODAY,task.getDueDate())){
                                         showLoadingIndicator(false);
@@ -261,7 +260,7 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                                 } catch (ParseException e) {
                                     e.printStackTrace();
                                 }
-                            }
+
                         }
                         else{
                             try {
