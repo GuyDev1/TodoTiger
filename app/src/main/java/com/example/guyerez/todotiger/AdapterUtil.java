@@ -8,9 +8,7 @@ import android.graphics.Color;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
-import android.widget.Adapter;
 import android.widget.AdapterView;
-import android.widget.ExpandableListView;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -281,6 +279,8 @@ public class AdapterUtil {
                 // Find the current task list that was clicked on
                 TaskList currentTaskList = mTaskListAdapter.getItem(position);
 
+                Log.d("bro", "onItemClick: "+currentTaskList.getTitle());
+
                 //get the current task list's ID and title
                 String currentTaskListId=currentTaskList.getId();
                 String currentTaskListTitle=currentTaskList.getTitle();
@@ -297,14 +297,9 @@ public class AdapterUtil {
 
                 //make changeTaskListFlag true - so SpecialTaskListActivity will respond to onChildChanged
                 SpecialTaskListActivity.changeTaskListFlag=true;
-
                 //Move the task inside the DB to another TaskList
-                moveTaskFireBase(mTaskDatabaseReference,mTaskDatabaseReference2,task.getId());
-                //Update the task's current TaskList ID and title
-                mTaskDatabaseReference2.child(task.getId()).child("taskListId").setValue(currentTaskListId);
-                mAllTasksDatabaseReference.child(task.getId()).child("taskListId").setValue(currentTaskListId);
-                mTaskDatabaseReference2.child(task.getId()).child("taskListTitle").setValue(currentTaskListTitle);
-                mAllTasksDatabaseReference.child(task.getId()).child("taskListTitle").setValue(currentTaskListTitle);
+                // and Update the task's current TaskList ID and title
+                moveTaskFireBase(mTaskDatabaseReference,mTaskDatabaseReference2,task.getId(),currentTaskListId,currentTaskListTitle,currentUser,task,mFirebaseDatabase,mAllTasksDatabaseReference);
 
                 if(adapter instanceof TaskAdapter){
                     ((TaskAdapter)adapter).remove(task);
@@ -320,30 +315,6 @@ public class AdapterUtil {
                             flagAdd=false;
                             mTaskNumDatabaseReference2.child("taskNum").setValue(taskCountAdd + 1);
                         }
-
-
-
-
-                    }
-
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {
-                        System.out.println("The read failed: " + databaseError.getCode());
-                    }
-                });
-
-                //Set flag to true to avoid an infinite loop while updating the taskNum for that TaskList
-                flagDelete=true;
-                mTaskNumDatabaseReference.addValueEventListener(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        taskCountDelete =dataSnapshot.getValue(TaskList.class).getTaskNum();
-                        if(flagDelete) {
-                            flagDelete=false;
-                            mTaskNumDatabaseReference.child("taskNum").setValue(taskCountDelete - 1);
-                        }
-
-
 
 
                     }
@@ -426,7 +397,9 @@ public class AdapterUtil {
     }
 
     // "fromPath" and "toPath" are like directories in the DB - we move the task from one to the other.
-    private static void moveTaskFireBase(final DatabaseReference fromPath, final DatabaseReference toPath, final String key) {
+    private static void moveTaskFireBase(final DatabaseReference fromPath, final DatabaseReference toPath, final String key,
+                                         final String currentTaskListId,final String currentTaskListTitle,final String currentUser,
+                                         final Task task,final FirebaseDatabase mFirebaseDatabase,final DatabaseReference mAllTasksDatabaseReference) {
         fromPath.child(key).addListenerForSingleValueEvent(new ValueEventListener() {
             // Now "DataSnapshot" holds the key and the value at the "fromPath".
             // So we copy it and transfer it to "toPath"
@@ -442,6 +415,11 @@ public class AdapterUtil {
                                     // In order to complete the move, we erase the original copy
                                     // by assigning null as its value.
                                     fromPath.child(key).setValue(null);
+                                    //Update the Task's new TaskList details in the DB
+                                    taskMoveUpdate(currentTaskListId,currentUser,
+                                            currentTaskListTitle,task,mFirebaseDatabase,mAllTasksDatabaseReference);
+
+
 
                                 }
                                 else {
@@ -468,5 +446,17 @@ public class AdapterUtil {
             return false;
         }
         return true;
+    }
+
+    //Update the task's current TaskList ID and title
+    private static void taskMoveUpdate(final String currentTaskListId,final String currentUser,String currentTaskListTitle,
+                                       final Task task,final FirebaseDatabase mFirebaseDatabase,final DatabaseReference mAllTasksDatabaseReference){
+        DatabaseReference mTaskDatabaseReference2=mFirebaseDatabase.getReference().child("users")
+                .child(currentUser).child("TaskLists")
+                .child(currentTaskListId).child("tasks");
+        mTaskDatabaseReference2.child(task.getId()).child("taskListId").setValue(currentTaskListId);
+        mAllTasksDatabaseReference.child(task.getId()).child("taskListId").setValue(currentTaskListId);
+        mTaskDatabaseReference2.child(task.getId()).child("taskListTitle").setValue(currentTaskListTitle);
+        mAllTasksDatabaseReference.child(task.getId()).child("taskListTitle").setValue(currentTaskListTitle);
     }
 }
