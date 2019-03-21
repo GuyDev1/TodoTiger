@@ -21,6 +21,7 @@ public class AlarmReceiver extends BroadcastReceiver  {
     //FireBase variables to access DB
     private ChildEventListener mChildEventListener;
     private FirebaseDatabase mFirebaseDatabase;
+    private DatabaseReference mAllTasksDatabaseReference;
     private DatabaseReference mTaskDatabaseReference;
 
     @Override
@@ -34,8 +35,8 @@ public class AlarmReceiver extends BroadcastReceiver  {
         String currentUser=sp.getString("userId",null);
 
         //Get the DB reference for this specific user and his tasks
-        mTaskDatabaseReference=mFirebaseDatabase.getReference().child("users").child(currentUser).child("allTasks");
-
+        mAllTasksDatabaseReference=mFirebaseDatabase.getReference().child("users").child(currentUser).child("allTasks");
+        mTaskDatabaseReference=mFirebaseDatabase.getReference().child("users").child(currentUser).child("TaskLists");
         if (intent.getAction() != null && context != null) {
             if (intent.getAction().equals("android.intent.action.BOOT_COMPLETED")) {
                 //Reinstate all active reminders.
@@ -66,7 +67,8 @@ public class AlarmReceiver extends BroadcastReceiver  {
             //Set the task's reminderDisplayed to true - the user presumably saw the reminder
             String taskId=extras.getString("taskId");
             //Update that the reminder was displayed (so it wouldn't be displayed again)
-            mTaskDatabaseReference.child(taskId).child("reminderDisplayed").setValue(true);
+            mAllTasksDatabaseReference.child(taskId).child("reminderDisplayed").setValue(true);
+            mTaskDatabaseReference.child(currentTaskListId).child("tasks").child(taskId).child("reminderDisplayed").setValue(true);
         }
 
 
@@ -90,7 +92,7 @@ public class AlarmReceiver extends BroadcastReceiver  {
                     if(!task.getReminderDisplayed()){
                         //Set the reminder
                         TaskInfoFragment.setReminder(context,AlarmReceiver.class,task.getReminderDate(),
-                                task.getReminderTime(),task,mTaskDatabaseReference.child(task.getId()));
+                                task.getReminderTime(),task,mAllTasksDatabaseReference.child(task.getId()));
                     }
                 }
             }
@@ -101,7 +103,7 @@ public class AlarmReceiver extends BroadcastReceiver  {
             public void onCancelled(DatabaseError databaseError) {}
         };
 
-        mTaskDatabaseReference.addChildEventListener(mChildEventListener);
+        mAllTasksDatabaseReference.addChildEventListener(mChildEventListener);
 
     }
 

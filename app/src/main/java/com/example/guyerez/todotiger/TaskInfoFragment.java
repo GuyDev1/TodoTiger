@@ -163,10 +163,14 @@ public class TaskInfoFragment extends Fragment {
                     mAllTasksDatabaseReference.child("dueDate").setValue(dueCalendar.getTime());
                 }
                 if (remindDateFlag) {
+                    //Update reminderDisplayed to false - this is a new reminder!
+                    updateReminderDisplayed(mAllTasksDatabaseReference,mTaskDatabaseReference,false);
                     mTaskDatabaseReference.child("reminderDate").setValue(remindDateCalendar.getTime());
                     mAllTasksDatabaseReference.child("reminderDate").setValue(remindDateCalendar.getTime());
                 }
                 if (remindTimeFlag) {
+                    //Update reminderDisplayed to false - this is a new reminder!
+                    updateReminderDisplayed(mAllTasksDatabaseReference,mTaskDatabaseReference,false);
                     mTaskDatabaseReference.child("reminderTime").setValue(remindTimeCalendar.getTime());
                     mAllTasksDatabaseReference.child("reminderTime").setValue(remindTimeCalendar.getTime());
                 }
@@ -177,8 +181,11 @@ public class TaskInfoFragment extends Fragment {
                 }
 
 
-                //Check if user scheduled a reminder and if so - set a reminder
-                if (!reminderDate.getText().toString().equals("") && !reminderTime.getText().toString().equals("")) {
+                //Check if the user scheduled a reminder and if so - set a reminder
+                //Also check if it's not an old reminder - by checking whether the user entered
+                // a new reminder date
+                if (!reminderDate.getText().toString().equals("") && !reminderTime.getText().toString().equals("")
+                    && (remindDateFlag || remindTimeFlag)){
                     setReminder(getContext(), AlarmReceiver.class, remindDateCalendar.getTime(), remindTimeCalendar.getTime()
                             , currentTask, mAllTasksDatabaseReference);
                 }
@@ -323,6 +330,11 @@ public class TaskInfoFragment extends Fragment {
 
     }
 
+    private void updateReminderDisplayed(DatabaseReference mAllTasksDatabaseReference,DatabaseReference mTaskDatabaseReference,boolean b) {
+        mAllTasksDatabaseReference.child("reminderDisplayed").setValue(b);
+        mTaskDatabaseReference.child("reminderDisplayed").setValue(b);
+    }
+
 
     //Update the dueDate with the date the user selected
     private void updateDueDateLabel() {
@@ -375,8 +387,6 @@ public class TaskInfoFragment extends Fragment {
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                 PackageManager.DONT_KILL_APP);
 
-        //Set task's reminderDisplayed property to false - this is a new reminder
-        ref.child("reminderDisplayed").setValue(false);
 
         //Start the reminder AlarmManager intent - to provide the notification
         //relevant details about this task
