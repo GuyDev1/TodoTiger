@@ -118,6 +118,8 @@ public class TaskActivity extends AppCompatActivity {
     private String thisTaskList;
     private String thisTaskListTitle;
 
+    //A temporary field to hold the latest task changed - get over Firebase offline-persistence bug
+    private Task latestTaskChanged;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -406,7 +408,24 @@ public class TaskActivity extends AppCompatActivity {
                     }
 
                 }
-                public void onChildChanged(DataSnapshot dataSnapshot, String s) { ;
+                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                    Task task = dataSnapshot.getValue(Task.class);
+                    //In case it's just the offline-persistence bug causing a double trigger, do nothing
+                    if(latestTaskChanged!=null && latestTaskChanged.getCompleted()==task.getCompleted()){
+                        return;
+                    }
+                    else{
+                        latestTaskChanged=task;
+                        if(task.getCompleted()){
+                            //reduce the number of open tasks by 1
+                            mTaskNumDatabaseReference.child("taskNum").setValue(taskCount-1);
+                        }
+                        else{
+                            //The task has been unchecked - it's relevant again, add it to the task count
+                            mTaskNumDatabaseReference.child("taskNum").setValue(taskCount+1);
+                        }
+                    }
+                    Log.d("wat", "onChildChanged: "+task.getCompleted());
                 }
                 @SuppressLint("NewApi")
                 public void onChildRemoved(DataSnapshot dataSnapshot) {

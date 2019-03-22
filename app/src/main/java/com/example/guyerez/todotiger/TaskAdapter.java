@@ -214,8 +214,10 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                     } else {
                         //Update the Task as unChecked (not completed) in the DB and UI
                         AdapterUtil.updateTaskUnchecked(titleTextView,dueDateTextView,currentTask,mTaskDatabaseReference,mAllTasksDatabaseReference,calendar,activity);
-                        //Reset the reminder if it had any
-                        AdapterUtil.resetTaskReminder(currentTask,activity,mAllTasksDatabaseReference);
+                        //Reset the task's reminder if it had any, and it wasn't displayed yet
+                        if(!currentTask.getReminderDisplayed()){
+                            AdapterUtil.resetTaskReminder(currentTask,activity,mAllTasksDatabaseReference);
+                        }
                         //If we're not in ALL_TASKS, we must be in SHOW_COMPLETED if we can un-complete the task
                         if(TaskActivity.tasksToShow!=SHOW_ALL_TASKS){
                             removeCompletedTaskAnim(currentTask);
