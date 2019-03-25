@@ -114,6 +114,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/linearLayout3">
 
+
         <TextView
             android:id="@+id/remind_date"
             android:layout_width="wrap_content"
@@ -122,6 +123,25 @@
             android:layout_marginStart="8dp"
             android:text="Reminder:"
             android:textSize="21sp" />
+
+        <android.support.v7.widget.SwitchCompat
+            android:id="@+id/set_reminder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="16dp"
+            android:textSize="18sp" />
+
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/linearLayout4Inner"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout4">
 
         <EditText
             android:id="@+id/remind_date_picker"
@@ -160,7 +180,7 @@
         android:layout_marginTop="22dp"
         android:orientation="horizontal"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/linearLayout4">
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout4Inner">
 
         <TextView
             android:id="@+id/priority"
@@ -222,6 +242,7 @@
         android:orientation="vertical"
         tools:layout_editor_absoluteX="71dp"
         tools:layout_editor_absoluteY="0dp">
+
 
     </FrameLayout>
 </android.support.constraint.ConstraintLayout>

@@ -25,16 +25,21 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.app.TaskStackBuilder;
+import android.support.v7.widget.SwitchCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.TimePicker;
 
@@ -71,6 +76,8 @@ public class TaskInfoFragment extends Fragment {
     private Button mSaveChangesButton;
     private Button mCancelButton;
     private int priority;
+    private SwitchCompat setReminderToggle;
+    private LinearLayout setReminderLayout;
 
     //FireBase DB references to change task info
     private FirebaseDatabase mFirebaseDatabase;
@@ -213,6 +220,54 @@ public class TaskInfoFragment extends Fragment {
             }
         });
 
+
+        //LinearLayout containing the EditText's required to set a new reminder
+        setReminderLayout=rootView.findViewById(R.id.linearLayout4Inner);
+        //Toggle to allow user to create a new reminder
+        setReminderToggle=rootView.findViewById(R.id.set_reminder);
+        //Reminder was set and still active
+        if(currentTask.getReminderDate()!=null){
+
+            //The reminder was set, but wasn't displayed it
+            if(!currentTask.getReminderDisplayed()){
+                setReminderToggle.setChecked(true);
+                setReminderToggle.setText("Reminder Active");
+            }
+            else{
+                //The reminder was already displayed, it's irrelevant now
+                setReminderToggle.setChecked(false);
+                setReminderToggle.setText("Reminder was displayed");
+            }
+        }
+        else{
+            //No reminder was set
+            setReminderToggle.setChecked(false);
+            setReminderLayout.setVisibility(View.GONE);
+            setReminderToggle.setText("Set Reminder");
+        }
+
+        setReminderToggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                Log.d("wat", "onCheckedChanged: "+isChecked);
+                if(isChecked){
+                    //The user wants to set a new reminder
+                    setReminderLayout.setVisibility(View.VISIBLE);
+                    setReminderToggle.setText("Pick reminder date");
+                    //Reset the Date and Time EditText's
+                    reminderDate.setText(null);
+                    reminderTime.setText(null);
+                }
+                else{
+                    //The user wants to cancel the reminder
+                    setReminderLayout.setVisibility(View.GONE);
+                    setReminderToggle.setText("Reminder Canceled");
+                    //Check if the reminder was actually set, or just a toggle-play
+                    if(currentTask.getReminderDate()!=null) {
+                        cancelReminder(getContext(), AlarmReceiver.class, currentTask.getIntId());
+                    }
+                }
+            }
+        });
 
         //Initialize dueDatePicker related variables
         dueCalendar = Calendar.getInstance();
