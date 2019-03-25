@@ -79,6 +79,7 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
     private DatabaseReference mTaskListDatabaseReference;
     private DatabaseReference mTaskDatabaseReference2;
     private DatabaseReference mTaskNumDatabaseReference2;
+    private DatabaseReference mTaskNumDatabaseReferenceGeneral;
     private ChildEventListener mChildEventListener;
     private ChildEventListener mChildEventListener2;
 
@@ -96,6 +97,12 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
     //Define task priority menu components
     private MenuBuilder menuBuilder;
     private MenuPopupHelper optionsMenu;
+
+    //Flag to prevent infinite loop while updating TaskList taskCount when completing a task
+    private boolean flagCompleted;
+
+    //Task Count field for a general TaskList
+    private int taskCountGeneral;
 
 
     public ExpandableListAdapter(Activity act, SparseArray<TaskGroup> taskGroups) {
@@ -247,6 +254,18 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
                         AdapterUtil.updateTaskChecked(title,dueDateTextView,task,calendar,mTaskDatabaseReference,mAllTasksDatabaseReference,activity,showCompleted);
                         //cancel task's reminder if it had one, since it's completed
                         AdapterUtil.cancelTaskReminder(task,activity);
+
+                        //If the user is in SearchTask - update relevant TaskList's TaskCount
+                        //If he's in SpecialTaskListActivity - that activity takes care of it,
+                        //Because we need to update the UI internally.
+                        if(activity instanceof SearchTask){
+                            mTaskNumDatabaseReferenceGeneral = mFirebaseDatabase.getReference().child("users")
+                                    .child(currentUser).child("TaskLists").child(task.getTaskListId());
+                            //Get the task count in this Task's TaskList
+                            //And remove this task from the task count (it has been completed)
+                            addTaskNumListenerGeneral();
+
+                        }
 
                     } else {
                         //Update the Task as unChecked (not completed) in the DB and UI
@@ -434,6 +453,34 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
         optionsMenu = new MenuPopupHelper(activity, menuBuilder, view);
         optionsMenu.setForceShowIcon(true);
     }
+
+
+    //Add a listener to the number of tasks in the TaskList that this task belongs to
+    private void addTaskNumListenerGeneral(){
+        //Set flag to true to avoid an infinite loop while updating the taskNum for that TaskList
+        flagCompleted=true;
+        mTaskNumDatabaseReferenceGeneral.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                TaskList taskList = dataSnapshot.getValue(TaskList.class);
+                if (taskList != null) {
+                    taskCountGeneral = taskList.getTaskNum();
+                    if(flagCompleted) {
+                        flagCompleted=false;
+                        mTaskNumDatabaseReferenceGeneral.child("taskNum").setValue(taskCountGeneral - 1);
+                    }
+                }
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                System.out.println("The read failed: " + databaseError.getCode());
+            }
+        });
+    }
+
+
 
 
 

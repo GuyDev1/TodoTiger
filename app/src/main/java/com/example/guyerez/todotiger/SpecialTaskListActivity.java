@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -63,6 +64,7 @@ public class SpecialTaskListActivity extends AppCompatActivity {
     private DatabaseReference mTaskDatabaseReference;
     private DatabaseReference mAllTasksDatabaseReference;
     private DatabaseReference mTaskNumDatabaseReferenceInbox;
+    private DatabaseReference mTaskNumDatabaseReferenceGeneral;
     private ChildEventListener mChildEventListener;
 
 
@@ -84,6 +86,9 @@ public class SpecialTaskListActivity extends AppCompatActivity {
     //Task Count in Inbox
     private int taskCountInbox;
 
+    //Task Count field for a general TaskList
+    private int taskCountGeneral;
+
 
     //SharedPreferences instance
     private SharedPreferences sharedPref;
@@ -94,6 +99,12 @@ public class SpecialTaskListActivity extends AppCompatActivity {
     //Flag to indicate the user moved a task to another TaskList
     //Used in order to avoid task update bugs in the ExpandableListView
     protected static boolean changeTaskListFlag;
+
+    //A temporary field to hold the latest task changed - get over Firebase offline-persistence bug
+    private Task latestTaskChanged;
+
+    //Flag to prevent infinite loop while updating TaskList taskCount when completing a task
+    private boolean flagCompleted;
 
 
     @Override
@@ -252,10 +263,16 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                     if(task!=null && task.getDueDate()!=null){
                         if(currentTaskList.equals("Due TodayID")){
                                 try {
-                                    if(checkDueDate(TASKS_DUE_TODAY,task.getDueDate())){
+                                    if(checkDueDate(TASKS_DUE_TODAY,task.getDueDate())
+                                        &&(!task.getCompleted())){
                                         showLoadingIndicator(false);
                                         showEmptyStateView(false);
                                         updateExpandableListView(task);
+                                    }
+                                    else if(taskGroups.size()==0){
+                                        //all tasks due today are completed
+                                        showLoadingIndicator(false);
+                                        showEmptyStateView(true);
                                     }
                                 } catch (ParseException e) {
                                     e.printStackTrace();
@@ -264,11 +281,17 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                         }
                         else{
                             try {
-                                if(checkDueDate(TASKS_DUE_TODAY,task.getDueDate())||
-                                        checkDueDate(TASKS_DUE_WEEK,task.getDueDate())){
+                                if((checkDueDate(TASKS_DUE_TODAY,task.getDueDate())||
+                                        checkDueDate(TASKS_DUE_WEEK,task.getDueDate()))
+                                        &&(!task.getCompleted())){
                                     showLoadingIndicator(false);
                                     showEmptyStateView(false);
                                     updateExpandableListView(task);
+                                }
+                                else if(taskGroups.size()==0){
+                                    //all tasks due this week are completed
+                                    showLoadingIndicator(false);
+                                    showEmptyStateView(true);
                                 }
                             } catch (ParseException e) {
                                 e.printStackTrace();
@@ -279,10 +302,26 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                 }
                 public void onChildChanged(DataSnapshot dataSnapshot, String s) {
                     Task task = dataSnapshot.getValue(Task.class);
+                    //Check if we moved the task
                     if(task!=null &&changeTaskListFlag){
                         //If we moved the task from one TaskList to another, update the UI
                         updateMovedExpandableListView(task);
-                        Log.d("wat111", "onChildChanged: "+task.getTitle()+task.getTaskListTitle());
+                    }
+                    //In case we completed the task
+                    // if it's just the offline-persistence bug causing a double trigger, reset latestTaskChanged
+                    if(latestTaskChanged!=null && latestTaskChanged.getCompleted()==task.getCompleted()){
+                        latestTaskChanged=null;
+                    }
+                    else {
+                        //Initialize the reference for this task's TaskList
+                        mTaskNumDatabaseReferenceGeneral = mFirebaseDatabase.getReference().child("users")
+                                .child(currentUser).child("TaskLists").child(task.getTaskListId());
+                        //Get the task count in this Task's TaskList
+                        //And remove this task from the task count (it has been completed)
+                        addTaskNumListenerGeneral();
+                        latestTaskChanged = task;
+                        //Remove the completed task from the UI, it's irrelevant now
+                        removeCompletedTaskAnim(task);
                     }
                 }
                 @SuppressLint("NewApi")
@@ -294,10 +333,6 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                         removeFromExpandableListView(task);
                     }
 
-                    if(taskGroups.size()==0){
-                        showEmptyStateView(true);
-                        showLoadingIndicator(false);
-                    }
                 }
                 public void onChildMoved(DataSnapshot dataSnapshot, String s) {
                     Log.d("wat", "onChildMoved2: ");
@@ -458,6 +493,11 @@ public class SpecialTaskListActivity extends AppCompatActivity {
             taskGroups.remove(index);
         }
         adapter.notifyDataSetChanged();
+        if(taskGroups.size()==0){
+            showEmptyStateView(true);
+            showLoadingIndicator(false);
+        }
+
     }
 
 
@@ -532,6 +572,31 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                 TaskList taskList = dataSnapshot.getValue(TaskList.class);
                 if (taskList != null) {
                     taskCountInbox = taskList.getTaskNum();
+                }
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                System.out.println("The read failed: " + databaseError.getCode());
+            }
+        });
+    }
+
+    //Add a listener to the number of tasks in the TaskList that this task belongs to
+    private void addTaskNumListenerGeneral(){
+        //Set flag to true to avoid an infinite loop while updating the taskNum for that TaskList
+        flagCompleted=true;
+        mTaskNumDatabaseReferenceGeneral.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                TaskList taskList = dataSnapshot.getValue(TaskList.class);
+                if (taskList != null) {
+                    taskCountGeneral = taskList.getTaskNum();
+                    if(flagCompleted) {
+                        flagCompleted=false;
+                        mTaskNumDatabaseReferenceGeneral.child("taskNum").setValue(taskCountGeneral - 1);
+                    }
                 }
 
             }
@@ -627,5 +692,17 @@ public class SpecialTaskListActivity extends AppCompatActivity {
 
         }
         return false;
+    }
+
+    //After a small delay for better animation effect
+    //Remove the task from current adapter since the user completed the task
+    private void removeCompletedTaskAnim(final Task currentTask){
+        final Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                removeFromExpandableListView(currentTask);
+            }}, 500);
+
     }
 }

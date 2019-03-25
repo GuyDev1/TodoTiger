@@ -604,11 +604,13 @@ public class MainActivity extends AppCompatActivity {
                     Task task = snapshot.getValue(Task.class);
                     if (task != null && task.getDueDate()!=null) {
                         try {
-                            if (checkDueDate(TASKS_DUE_TODAY, task.getDueDate())) {
+                            if (checkDueDate(TASKS_DUE_TODAY, task.getDueDate())
+                                &&(!task.getCompleted())) {
                                 countDueToday++;
                                 countDueWeek++;
                             }
-                            else if(checkDueDate(TASKS_DUE_WEEK, task.getDueDate())){
+                            else if(checkDueDate(TASKS_DUE_WEEK, task.getDueDate())
+                                    &&(!task.getCompleted())){
                                 countDueWeek++;
                             }
                         } catch (ParseException e) {

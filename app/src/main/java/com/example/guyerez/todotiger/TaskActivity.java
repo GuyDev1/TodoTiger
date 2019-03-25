@@ -410,9 +410,9 @@ public class TaskActivity extends AppCompatActivity {
                 }
                 public void onChildChanged(DataSnapshot dataSnapshot, String s) {
                     Task task = dataSnapshot.getValue(Task.class);
-                    //In case it's just the offline-persistence bug causing a double trigger, do nothing
+                    //In case it's just the offline-persistence bug causing a double trigger, reset latestTaskChanged
                     if(latestTaskChanged!=null && latestTaskChanged.getCompleted()==task.getCompleted()){
-                        return;
+                        latestTaskChanged=null;
                     }
                     else{
                         latestTaskChanged=task;
@@ -425,7 +425,6 @@ public class TaskActivity extends AppCompatActivity {
                             mTaskNumDatabaseReference.child("taskNum").setValue(taskCount+1);
                         }
                     }
-                    Log.d("wat", "onChildChanged: "+task.getCompleted());
                 }
                 @SuppressLint("NewApi")
                 public void onChildRemoved(DataSnapshot dataSnapshot) {
