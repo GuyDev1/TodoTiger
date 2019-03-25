@@ -310,11 +310,15 @@ public class AdapterUtil {
                 mTaskNumDatabaseReference2.addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
-                        taskCountAdd =dataSnapshot.getValue(TaskList.class).getTaskNum();
-                        if(flagAdd) {
-                            flagAdd=false;
-                            mTaskNumDatabaseReference2.child("taskNum").setValue(taskCountAdd + 1);
+                        TaskList taskList=dataSnapshot.getValue(TaskList.class);
+                        if(taskList!=null){
+                            taskCountAdd =taskList.getTaskNum();
+                            if(flagAdd) {
+                                flagAdd=false;
+                                mTaskNumDatabaseReference2.child("taskNum").setValue(taskCountAdd + 1);
+                            }
                         }
+
 
 
                     }
