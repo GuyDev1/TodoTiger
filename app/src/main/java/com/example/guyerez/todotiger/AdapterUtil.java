@@ -325,9 +325,29 @@ public class AdapterUtil {
                     }
                 });
 
+                //Set flag to true to avoid an infinite loop while updating the taskNum for that TaskList
+                flagDelete=true;
+                mTaskNumDatabaseReference.addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        taskCountDelete = dataSnapshot.getValue(TaskList.class).getTaskNum();
+                        if (flagDelete) {
+                            flagDelete = false;
+                            mTaskNumDatabaseReference.child("taskNum").setValue(taskCountDelete - 1);
+                        }
+                    }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+                            System.out.println("The read failed: " + databaseError.getCode());
+                        }
+                    });
+
 
                 moveTaskDialog.dismiss();
                 Toast.makeText(activity,"Task moved!", Toast.LENGTH_LONG).show();
+
+
 
             }
         });

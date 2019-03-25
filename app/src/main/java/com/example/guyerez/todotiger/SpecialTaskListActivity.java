@@ -265,6 +265,7 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                                 try {
                                     if(checkDueDate(TASKS_DUE_TODAY,task.getDueDate())
                                         &&(!task.getCompleted())){
+                                        Log.d("triggered", "onChildAdded: ");
                                         showLoadingIndicator(false);
                                         showEmptyStateView(false);
                                         updateExpandableListView(task);
@@ -307,22 +308,26 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                         //If we moved the task from one TaskList to another, update the UI
                         updateMovedExpandableListView(task);
                     }
-                    //In case we completed the task
-                    // if it's just the offline-persistence bug causing a double trigger, reset latestTaskChanged
-                    if(latestTaskChanged!=null && latestTaskChanged.getCompleted()==task.getCompleted()){
-                        latestTaskChanged=null;
+                    else{
+                        Log.d("shouldn't trigger", "onChildChanged: ");
+                        //In case we completed the task
+                        // if it's just the offline-persistence bug causing a double trigger, reset latestTaskChanged
+                        if(latestTaskChanged!=null && latestTaskChanged.getCompleted()==task.getCompleted()){
+                            latestTaskChanged=null;
+                        }
+                        else {
+                            //Initialize the reference for this task's TaskList
+                            mTaskNumDatabaseReferenceGeneral = mFirebaseDatabase.getReference().child("users")
+                                    .child(currentUser).child("TaskLists").child(task.getTaskListId());
+                            //Get the task count in this Task's TaskList
+                            //And remove this task from the task count (it has been completed)
+                            addTaskNumListenerGeneral();
+                            latestTaskChanged = task;
+                            //Remove the completed task from the UI, it's irrelevant now
+                            removeCompletedTaskAnim(task);
+                        }
                     }
-                    else {
-                        //Initialize the reference for this task's TaskList
-                        mTaskNumDatabaseReferenceGeneral = mFirebaseDatabase.getReference().child("users")
-                                .child(currentUser).child("TaskLists").child(task.getTaskListId());
-                        //Get the task count in this Task's TaskList
-                        //And remove this task from the task count (it has been completed)
-                        addTaskNumListenerGeneral();
-                        latestTaskChanged = task;
-                        //Remove the completed task from the UI, it's irrelevant now
-                        removeCompletedTaskAnim(task);
-                    }
+
                 }
                 @SuppressLint("NewApi")
                 public void onChildRemoved(DataSnapshot dataSnapshot) {
@@ -330,7 +335,7 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                     if(task!=null){
                         //if we deleted the task - update the UI
                         Log.d("wat", "onChildRemoved: "+task.getTitle());
-                        removeFromExpandableListView(task);
+                        removeFromExpandableListView(task,false);
                     }
 
                 }
@@ -469,7 +474,7 @@ public class SpecialTaskListActivity extends AppCompatActivity {
     }
 
     //Remove the task from the ExpandableListView and update UI accordingly
-    private void removeFromExpandableListView(Task currentTask) {
+    private void removeFromExpandableListView(Task currentTask, boolean taskMoved) {
         String taskListTitle=currentTask.getTaskListTitle();
         int index=findTaskList(taskListTitle);
         TaskGroup tg=taskGroups.get(index);
@@ -493,7 +498,7 @@ public class SpecialTaskListActivity extends AppCompatActivity {
             taskGroups.remove(index);
         }
         adapter.notifyDataSetChanged();
-        if(taskGroups.size()==0){
+        if(taskGroups.size()==0 && (!taskMoved)){
             showEmptyStateView(true);
             showLoadingIndicator(false);
         }
@@ -543,7 +548,7 @@ public class SpecialTaskListActivity extends AppCompatActivity {
             TaskGroup tg=taskGroups.get(index);
             //Still in previous TaskList - remove it from here
             if(findTaskInTaskGroup(currentTask,tg)!=-1){
-                removeFromExpandableListView(currentTask);
+                removeFromExpandableListView(currentTask,true);
                 return;
             }
             tg.tasks.add(currentTask);
@@ -701,7 +706,7 @@ public class SpecialTaskListActivity extends AppCompatActivity {
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                removeFromExpandableListView(currentTask);
+                removeFromExpandableListView(currentTask,false);
             }}, 500);
 
     }
