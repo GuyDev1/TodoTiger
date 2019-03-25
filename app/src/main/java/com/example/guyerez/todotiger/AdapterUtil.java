@@ -353,30 +353,34 @@ public class AdapterUtil {
                 else{
                     ((TaskAdapter)adapter).remove(taskClicked);
                 }
+                //Check if it's not a completed task (if it is, no need to decrease TaskList's taskCount.
+                if(!taskClicked.getCompleted()){
+                    Log.d("completed?", "onClick: ");
+                    //Set flag to true to avoid an infinite loop while updating the taskNum for that TaskList
+                    flagDelete=true;
+                    mTaskNumDatabaseReference.addValueEventListener(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            taskCountDelete =dataSnapshot.getValue(TaskList.class).getTaskNum();
+                            Log.d("wat1234556-1", "onDataChange: ");
+                            if(flagDelete) {
+                                flagDelete=false;
+                                Log.d("wat1234556-2", "onDataChange: ");
+                                mTaskNumDatabaseReference.child("taskNum").setValue(taskCountDelete - 1);
+                            }
 
-                //Set flag to true to avoid an infinite loop while updating the taskNum for that TaskList
-                flagDelete=true;
-                mTaskNumDatabaseReference.addValueEventListener(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        taskCountDelete =dataSnapshot.getValue(TaskList.class).getTaskNum();
-                        Log.d("wat1234556-1", "onDataChange: ");
-                        if(flagDelete) {
-                            flagDelete=false;
-                            Log.d("wat1234556-2", "onDataChange: ");
-                            mTaskNumDatabaseReference.child("taskNum").setValue(taskCountDelete - 1);
+
+
+
                         }
 
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+                            System.out.println("The read failed: " + databaseError.getCode());
+                        }
+                    });
+                }
 
-
-
-                    }
-
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {
-                        System.out.println("The read failed: " + databaseError.getCode());
-                    }
-                });
                 if(taskClicked.getReminderDate()!=null){
                     TaskInfoFragment.cancelReminder(activity,AlarmReceiver.class,taskClicked.getIntId());
                 }

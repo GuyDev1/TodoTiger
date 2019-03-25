@@ -433,7 +433,7 @@ public class TaskActivity extends AppCompatActivity {
                         mEmptyStateTextView.setVisibility(View.VISIBLE);
                         mEmptyStateTextView.setText("No task lists, add a new one!");
                     }
-                    mTaskNumDatabaseReference.child("taskNum").setValue(taskCount-1);
+
                 }
                 public void onChildMoved(DataSnapshot dataSnapshot, String s) {}
                 public void onCancelled(DatabaseError databaseError) {}
