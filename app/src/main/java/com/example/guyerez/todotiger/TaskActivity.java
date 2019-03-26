@@ -120,6 +120,9 @@ public class TaskActivity extends AppCompatActivity {
 
     //A temporary field to hold the latest task changed - get over Firebase offline-persistence bug
     private Task latestTaskChanged;
+    //A flag to avoid incorrect use of onChildChanged when editing Task's priority
+    private boolean priorityChangedFlag=false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -410,28 +413,38 @@ public class TaskActivity extends AppCompatActivity {
                 }
                 public void onChildChanged(DataSnapshot dataSnapshot, String s) {
                     Task task = dataSnapshot.getValue(Task.class);
-                    //In case it's just the offline-persistence bug causing a double trigger, reset latestTaskChanged
-                    if(latestTaskChanged!=null && latestTaskChanged.getCompleted()==task.getCompleted()){
-                        latestTaskChanged=null;
+                    //The user changed the task's priority directly from the TaskList's view
+                    //Change priorityChanged to false, to indicate the priority is now set
+                    if(priorityChangedFlag) {
+                        priorityChangedFlag = false;
                     }
+
                     else{
-                        latestTaskChanged=task;
-                        if(task.getCompleted()){
-                            //reduce the number of open tasks by 1
-                            mTaskNumDatabaseReference.child("taskNum").setValue(taskCount-1);
+                        //Otherwise - the user must have completed/uncompleted a task
+                        //In case it's just the offline-persistence bug causing a double trigger, reset latestTaskChanged
+                        if(latestTaskChanged!=null && latestTaskChanged.getCompleted()==task.getCompleted()){
+                            latestTaskChanged=null;
                         }
                         else{
-                            //The task has been unchecked - it's relevant again, add it to the task count
-                            mTaskNumDatabaseReference.child("taskNum").setValue(taskCount+1);
+                            latestTaskChanged=task;
+                            if(task.getCompleted()){
+                                //reduce the number of open tasks by 1
+                                mTaskNumDatabaseReference.child("taskNum").setValue(taskCount-1);
+                            }
+                            else{
+                                //The task has been unchecked - it's relevant again, add it to the task count
+                                mTaskNumDatabaseReference.child("taskNum").setValue(taskCount+1);
+                            }
                         }
                     }
+
                 }
                 @SuppressLint("NewApi")
                 public void onChildRemoved(DataSnapshot dataSnapshot) {
                     Task task = dataSnapshot.getValue(Task.class);
                     if(mTaskAdapter.isEmpty()){
                         mEmptyStateTextView.setVisibility(View.VISIBLE);
-                        mEmptyStateTextView.setText("No task lists, add a new one!");
+                        mEmptyStateTextView.setText("No tasks, add a new one!");
                     }
 
                 }
@@ -724,6 +737,10 @@ public class TaskActivity extends AppCompatActivity {
         }
 
 
+        }
+
+        public void setPriorityChangedFlag(boolean b){
+            priorityChangedFlag=b;
         }
     }
 

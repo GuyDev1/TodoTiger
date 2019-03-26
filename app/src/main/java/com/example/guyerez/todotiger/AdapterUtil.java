@@ -138,9 +138,17 @@ public class AdapterUtil {
     }
 
     public static void setPriority(int priorityLevel, Task task, DatabaseReference mTaskDatabaseReference,
-                             DatabaseReference mAllTasksDatabaseReference,ImageView priorityImage) {
+                             DatabaseReference mAllTasksDatabaseReference,ImageView priorityImage,Activity activity) {
         mTaskDatabaseReference.child("priority").setValue(priorityLevel);
         mAllTasksDatabaseReference.child("priority").setValue(priorityLevel);
+        //If we are in TaskActivity - set priorityChangedFlag to true - to indicate we changed
+        //the task's priority (so onChildChanged won't trigger a task count change).
+        if(activity instanceof TaskActivity){
+            ((TaskActivity)activity).setPriorityChangedFlag(true);
+        }
+        else if(activity instanceof SpecialTaskListActivity){
+            ((SpecialTaskListActivity)activity).setPriorityChangedFlag(true);
+        }
         task.setPriority(priorityLevel); //Update currentTask - keeping taskInfoFragment up to date
         setPriorityImage(priorityLevel,priorityImage);//Updating the image to show instant change of priority
 

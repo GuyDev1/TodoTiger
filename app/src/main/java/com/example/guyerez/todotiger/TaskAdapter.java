@@ -162,7 +162,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
             public void onClick(View view) {
                 initPriorityMenu(view);
 
-                //Init the task DB reference to edit task completion status
+                //Init the task DB reference to edit task priority
                 initDatabaseReferences(currentTask);
 
                 // Set Item Click Listener
@@ -171,13 +171,13 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                     public boolean onMenuItemSelected(MenuBuilder menu, MenuItem item) {
                         switch (item.getItemId()) {
                             case R.id.priority_urgent:
-                                AdapterUtil.setPriority(PRIORITY_URGENT,currentTask,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage);
+                                AdapterUtil.setPriority(PRIORITY_URGENT,currentTask,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage,activity);
                                 return true;
                             case R.id.priority_high:
-                                AdapterUtil.setPriority(PRIORITY_HIGH,currentTask,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage);
+                                AdapterUtil.setPriority(PRIORITY_HIGH,currentTask,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage,activity);
                                 return true;
                             case R.id.priority_default:
-                                AdapterUtil.setPriority(PRIORITY_DEFAULT,currentTask,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage);
+                                AdapterUtil.setPriority(PRIORITY_DEFAULT,currentTask,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage,activity);
                                 return true;
                             default:
                                 return false;

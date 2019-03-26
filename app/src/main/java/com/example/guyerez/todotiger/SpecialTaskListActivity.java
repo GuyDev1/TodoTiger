@@ -106,6 +106,9 @@ public class SpecialTaskListActivity extends AppCompatActivity {
     //Flag to prevent infinite loop while updating TaskList taskCount when completing a task
     private boolean flagCompleted;
 
+    //A flag to avoid incorrect use of onChildChanged when editing Task's priority
+    private boolean priorityChangedFlag=false;
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -308,8 +311,10 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                         //If we moved the task from one TaskList to another, update the UI
                         updateMovedExpandableListView(task);
                     }
+                    else if(priorityChangedFlag){
+                        priorityChangedFlag=false;
+                    }
                     else{
-                        Log.d("shouldn't trigger", "onChildChanged: ");
                         //In case we completed the task
                         // if it's just the offline-persistence bug causing a double trigger, reset latestTaskChanged
                         if(latestTaskChanged!=null && latestTaskChanged.getCompleted()==task.getCompleted()){
@@ -709,5 +714,9 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                 removeFromExpandableListView(currentTask,false);
             }}, 500);
 
+    }
+
+    public void setPriorityChangedFlag(boolean b){
+        priorityChangedFlag=b;
     }
 }
