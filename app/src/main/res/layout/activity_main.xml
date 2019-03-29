@@ -6,7 +6,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:background="@color/background">
 
     <ListView
         android:id="@+id/task_list_view"
@@ -18,24 +19,10 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        tools:listitem="@layout/tlist_item" />
-
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/fab"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
-        android:layout_marginBottom="16dp"
-        android:layout_marginEnd="25dp"
-        android:layout_marginRight="25dp"
-        app:backgroundTint="@android:color/holo_blue_dark"
-        android:tint="@android:color/white"
-        app:fabSize="normal"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:elevation="4dp"
-        app:srcCompat="@android:drawable/ic_input_add" />
+        android:dividerHeight="5dp"
+        android:divider="@color/background"
+        tools:listitem="@layout/tlist_item"
+        android:background="@color/background"/>
 
     <!-- Empty view is only visible when the list has no items. -->
     <TextView
@@ -47,6 +34,16 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"/>
+
+    <ImageView
+        android:id="@+id/add_tasklist_button"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginBottom="12dp"
+        app:srcCompat="@drawable/add" />
 
     <!-- Loading indicator - until all task lists are shown -->
     <ProgressBar

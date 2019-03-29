@@ -1,5 +1,6 @@
 package com.example.guyerez.todotiger;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
@@ -32,6 +33,7 @@ public class TaskListAdapter extends ArrayAdapter<TaskList> {
         super(context, 0, taskLists);
     }
 
+    @SuppressLint("NewApi")
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         // Check if an existing view is being reused, otherwise inflate the view
@@ -40,6 +42,8 @@ public class TaskListAdapter extends ArrayAdapter<TaskList> {
             listItemView = LayoutInflater.from(getContext()).inflate(
                     R.layout.tlist_item, parent, false);
         }
+        //Set clipToOutline to set item corners and shadow
+        listItemView.setClipToOutline(true);
         // Get the {@link TaskList} object located at this position in the list
         TaskList currentTaskList = getItem(position);
 

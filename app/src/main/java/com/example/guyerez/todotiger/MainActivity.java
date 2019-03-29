@@ -16,19 +16,23 @@ import android.support.annotation.RequiresApi;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.ContextMenu;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -113,6 +117,24 @@ public class MainActivity extends AppCompatActivity {
         //Create the notification channel
         createNotificationChannel();
 
+//        //Setup app logo
+//        getSupportActionBar().setDisplayShowHomeEnabled(true);
+//        getSupportActionBar().setTitle("");
+//        getSupportActionBar().setLogo(R.drawable.todo_tiger);
+//        getSupportActionBar().setDisplayUseLogoEnabled(true);
+
+        //Customize the ActionBar - setup app logo in the middle
+         ActionBar abar = getSupportActionBar();
+        View viewActionBar = getLayoutInflater().inflate(R.layout.custom_action_bar, null);
+        ActionBar.LayoutParams params = new ActionBar.LayoutParams(//Center the textview in the ActionBar !
+                ActionBar.LayoutParams.WRAP_CONTENT,
+                ActionBar.LayoutParams.MATCH_PARENT,
+                Gravity.CENTER);
+        abar.setCustomView(viewActionBar, params);
+        abar.setDisplayShowCustomEnabled(true);
+        abar.setDisplayShowTitleEnabled(false);
+        abar.setIcon(R.drawable.todo_tiger);
+
 
         // Initialize Firebase components
         mFirebaseAuth = FirebaseAuth.getInstance();
@@ -187,11 +209,12 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        //Set and create the FAB and it's action listener
-        FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        //Define custom "FAB" and it's onClickListener - to create a new TaskList
+        final ImageView createTaskListButton=findViewById(R.id.add_tasklist_button);
+        createTaskListButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                createTaskListButton.startAnimation(AnimationUtils.loadAnimation(context, R.anim.add_tasklist_anim));
                 // Get add_list.xml view
                 LayoutInflater li = LayoutInflater.from(context);
                 View addTaskListView = li.inflate(R.layout.add_list, null);
@@ -257,6 +280,7 @@ public class MainActivity extends AppCompatActivity {
                 alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
             }
         });
+
         // Set an item click listener on the ListView, which creates an intent to open
         //the relevant task list and show the tasks inside.
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
