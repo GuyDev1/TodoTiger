@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.PorterDuff;
 import android.os.Build;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
@@ -28,10 +29,12 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -106,7 +109,11 @@ public class MainActivity extends AppCompatActivity {
     private int countDueToday;
     private int countDueWeek;
 
+    //Custom ImageView button for adding new TaskList's
+    private ImageView createTaskListButton;
 
+
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -210,11 +217,14 @@ public class MainActivity extends AppCompatActivity {
         };
 
         //Define custom "FAB" and it's onClickListener - to create a new TaskList
-        final ImageView createTaskListButton=findViewById(R.id.add_tasklist_button);
+        createTaskListButton=findViewById(R.id.add_tasklist_button);
+        //set onTouch listener for proper animation
+        AdapterUtil.setImageViewClickAnimation(createTaskListButton);
+
+        //Set onClickListener - to respond and enable the user to create a new TaskList
         createTaskListButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                createTaskListButton.startAnimation(AnimationUtils.loadAnimation(context, R.anim.add_tasklist_anim));
                 // Get add_list.xml view
                 LayoutInflater li = LayoutInflater.from(context);
                 View addTaskListView = li.inflate(R.layout.add_list, null);
