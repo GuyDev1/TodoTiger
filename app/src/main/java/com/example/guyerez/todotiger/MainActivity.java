@@ -112,6 +112,10 @@ public class MainActivity extends AppCompatActivity {
     //Custom ImageView button for adding new TaskList's
     private ImageView createTaskListButton;
 
+    //Number of completed tasks so far
+    private int numberOfCompletedTasks;
+    private TextView numberOfCompletedTextView;
+
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -146,6 +150,9 @@ public class MainActivity extends AppCompatActivity {
         // Initialize Firebase components
         mFirebaseAuth = FirebaseAuth.getInstance();
         mFirebaseDatabase = FirebaseDatabase.getInstance();
+
+        //Initializie number of completed tasks TextView
+        numberOfCompletedTextView=findViewById(R.id.number_completed_tasks);
 
         //Check if this user has TaskList's if not - show EmptyStateTextView
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference().child("users");
@@ -627,6 +634,7 @@ public class MainActivity extends AppCompatActivity {
 
     //Attach a databaseReadListener to check the current number of tasks associated with the
     //default TaskLists - that is, update their task number in the UI
+    //Also update the number of completed tasks.
     private void attachDatabaseReadListenerDue() {
         mAllTasksDatabaseReference.addValueEventListener(new ValueEventListener() {
             @SuppressLint("NewApi")
@@ -634,6 +642,7 @@ public class MainActivity extends AppCompatActivity {
             public void onDataChange(DataSnapshot dataSnapshot) {
                 countDueToday=0;
                 countDueWeek=0;
+                numberOfCompletedTasks=0;
                 for(DataSnapshot snapshot : dataSnapshot.getChildren()){
                     Task task = snapshot.getValue(Task.class);
                     if (task != null && task.getDueDate()!=null) {
@@ -651,12 +660,19 @@ public class MainActivity extends AppCompatActivity {
                             e.printStackTrace();
                         }
 
-                    };
+                    }
+                    if(task!=null && task.getCompleted()){
+                       numberOfCompletedTasks++;
+                    }
+
 
                 }
 
                 mTaskNumDatabaseReferenceDueToday.child("taskNum").setValue(countDueToday);
                 mTaskNumDatabaseReferenceDueWeek.child("taskNum").setValue(countDueWeek);
+                numberOfCompletedTextView.setText(Integer.toString(numberOfCompletedTasks));
+
+
             }
 
             @Override
