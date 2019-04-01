@@ -71,8 +71,9 @@ public class SpecialTaskListActivity extends AppCompatActivity {
     //Current user ID
     private String currentUser;
 
-    //Current special TaskList ID
+    //Current special TaskList ID and Title
     private String currentTaskList;
+    private String thisTaskListTitle;
 
     // More efficient than HashMap for mapping integers to objects
     private SparseArray<TaskGroup> taskGroups = new SparseArray<TaskGroup>();
@@ -116,6 +117,8 @@ public class SpecialTaskListActivity extends AppCompatActivity {
         // Set the content of the activity to use the search_activity.xml layout
         setContentView(R.layout.special_task_list_activity);
 
+        this.setTitle(thisTaskListTitle);
+
         //Set up to allow Up navigation to parent activity
         this.getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
@@ -123,6 +126,7 @@ public class SpecialTaskListActivity extends AppCompatActivity {
         SharedPreferences currentData = this.getSharedPreferences("MyPref", Context.MODE_PRIVATE);
         currentUser = currentData.getString("userId", null);
         currentTaskList=currentData.getString("currentTaskList",null);
+        thisTaskListTitle=currentData.getString("currentTaskListTitle","TIGER");
 
         //Init sharedPreferences for getting Task ID number
         sharedPref = this.getPreferences(Context.MODE_PRIVATE);
@@ -239,6 +243,7 @@ public class SpecialTaskListActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        this.setTitle(thisTaskListTitle);
         showEmptyStateView(false);
         showLoadingIndicator(true);
         attachDatabaseReadListener();
@@ -450,7 +455,7 @@ public class SpecialTaskListActivity extends AppCompatActivity {
             //setClickable to false to prevent clicks being caught by the fragment's frame while we're viewing the tasks
             FrameLayout frameLayout = findViewById(R.id.frag_container);
             frameLayout.setClickable(false);
-            this.setTitle("TodoTiger");
+            this.setTitle(thisTaskListTitle);
             super.onBackPressed();
         }
     }

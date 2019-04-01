@@ -67,6 +67,8 @@ public class SearchTask extends AppCompatActivity {
         // Set the content of the activity to use the search_activity.xml layout
         setContentView(R.layout.search_activity);
 
+        this.setTitle("Search Tasks");
+
         //Indicate that Search is active
         SEARCH_ACTIVE = true;
 
@@ -142,6 +144,7 @@ public class SearchTask extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         SEARCH_ACTIVE = true;
+        this.setTitle("Search Tasks");
 
     }
 
@@ -278,7 +281,7 @@ public class SearchTask extends AppCompatActivity {
             //setClickable to false to prevent clicks being caught by the fragment's frame while we're viewing the tasks
             FrameLayout frameLayout = findViewById(R.id.frag_container);
             frameLayout.setClickable(false);
-            this.setTitle("TodoTiger");
+            this.setTitle("Search Tasks");
             super.onBackPressed();
         }
     }
