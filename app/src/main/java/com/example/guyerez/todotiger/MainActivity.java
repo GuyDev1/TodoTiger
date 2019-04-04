@@ -57,6 +57,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 import static com.example.guyerez.todotiger.TaskActivity.TASKS_DUE_TODAY;
@@ -96,10 +97,8 @@ public class MainActivity extends AppCompatActivity {
     private DatabaseReference mAllTasksDatabaseReference;
     private DatabaseReference mTaskNumDatabaseReferenceDueToday;
     private DatabaseReference mTaskNumDatabaseReferenceDueWeek;
+    private DatabaseReference mTaskNumGeneralDatabaseReference;
     private ChildEventListener mChildEventListener;
-
-    //SharedPreferences instance
-    private SharedPreferences sharedPref;
 
     //Indicators - Show default TaskLists in ListView
     private boolean showDueToday;
@@ -127,12 +126,6 @@ public class MainActivity extends AppCompatActivity {
 
         //Create the notification channel
         createNotificationChannel();
-
-//        //Setup app logo
-//        getSupportActionBar().setDisplayShowHomeEnabled(true);
-//        getSupportActionBar().setTitle("");
-//        getSupportActionBar().setLogo(R.drawable.todo_tiger);
-//        getSupportActionBar().setDisplayUseLogoEnabled(true);
 
         //Customize the ActionBar - setup app logo in the middle
          ActionBar abar = getSupportActionBar();
@@ -399,8 +392,11 @@ public class MainActivity extends AppCompatActivity {
                 .child(userId).child("TaskLists").child("Due TodayID");
         mTaskNumDatabaseReferenceDueWeek = mFirebaseDatabase.getReference().child("users")
                 .child(userId).child("TaskLists").child("Due This WeekID");
+        mTaskNumGeneralDatabaseReference=mFirebaseDatabase.getReference().child("users")
+                .child(userId).child("TaskLists");
+
         attachDatabaseReadListener();
-        attachDatabaseReadListenerDue();
+        attachDatabaseReadListenerForTaskCount();
 
         if (!defaultTasksCreated(userId)) {
             initDefaultTaskLists(userId);
@@ -410,7 +406,7 @@ public class MainActivity extends AppCompatActivity {
         //Update current user in SharedPreferences
         SharedPreferences pref = getApplicationContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = pref.edit();
-        editor.putString("userId", userId); // Storing boolean - true/false
+        editor.putString("userId", userId);
         editor.commit();
 
     }
@@ -489,7 +485,6 @@ public class MainActivity extends AppCompatActivity {
     public boolean onContextItemSelected(MenuItem menuItem) {
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuItem.getMenuInfo();
         TaskList taskListClicked = mTaskListAdapter.getItem(info.position);
-        Log.d("check", "" + taskListClicked.getTitle());
         switch (menuItem.getItemId()) {
             case 0:
                 //The user chose to delete this TaskList - react appropriately
@@ -520,17 +515,14 @@ public class MainActivity extends AppCompatActivity {
             public void onDataChange(DataSnapshot dataSnapshot) {
                 for(DataSnapshot snapshot : dataSnapshot.getChildren()){
                     Task task = snapshot.getValue(Task.class);
-                    Log.d("wat1", "onDataChange: "+task.getTitle());
-                    if (task.getTaskListId().equals(taskListId)) {
-                        Log.d("wat2", "onDataChange: "+task.getTitle());
+                    if (task.getTaskListId().equals(taskListId))
                         tasksToDelete.add(task);
-                    }
+
 
                 }
-                for(Task t:tasksToDelete){
-                    Log.d("wat4", "onDataChange: "+t.getTitle());
+                for(Task t:tasksToDelete)
                     mAllTasksDatabaseReference.child(t.getId()).removeValue();
-                }
+
 
             }
 
@@ -539,8 +531,6 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-
-
     }
 
 
@@ -616,7 +606,6 @@ public class MainActivity extends AppCompatActivity {
 
     //Create the default TaskLists with an early date so they always show on top
     private void createDefaultTaskList(String taskListName, int defaultTaskName) {
-        Log.d("wat", "createDefaultTaskList: ");
         Calendar calendar = Calendar.getInstance();
         calendar.set(2000, 1, 1, 0, defaultTaskName);
         Date creationDate = calendar.getTime();
@@ -632,28 +621,28 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    //Attach a databaseReadListener to check the current number of tasks associated with the
-    //default TaskLists - that is, update their task number in the UI
-    //Also update the number of completed tasks.
-    private void attachDatabaseReadListenerDue() {
+    //Attach a databaseReadListener to update all the TaskList's TaskCount.
+    private void attachDatabaseReadListenerForTaskCount() {
         mAllTasksDatabaseReference.addValueEventListener(new ValueEventListener() {
             @SuppressLint("NewApi")
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
+                HashMap<String,Integer> taskListsTaskCount=new HashMap<>();
+                HashMap<String,Integer> taskListsTasksDueCount=new HashMap<>();
                 countDueToday=0;
                 countDueWeek=0;
                 numberOfCompletedTasks=0;
                 for(DataSnapshot snapshot : dataSnapshot.getChildren()){
                     Task task = snapshot.getValue(Task.class);
-                    if (task != null && task.getDueDate()!=null) {
+                    updateTaskCountInMap(taskListsTaskCount,task.getTaskListId());
+                    if (task != null && task.getDueDate()!=null &&(!task.getCompleted())) {
+                        updateTaskCountInMap(taskListsTasksDueCount,task.getTaskListId());
                         try {
-                            if (checkDueDate(TASKS_DUE_TODAY, task.getDueDate())
-                                &&(!task.getCompleted())) {
+                            if (checkDueDate(TASKS_DUE_TODAY, task.getDueDate())) {
                                 countDueToday++;
                                 countDueWeek++;
                             }
-                            else if(checkDueDate(TASKS_DUE_WEEK, task.getDueDate())
-                                    &&(!task.getCompleted())){
+                            else if(checkDueDate(TASKS_DUE_WEEK, task.getDueDate())){
                                 countDueWeek++;
                             }
                         } catch (ParseException e) {
@@ -672,7 +661,19 @@ public class MainActivity extends AppCompatActivity {
                 mTaskNumDatabaseReferenceDueWeek.child("taskNum").setValue(countDueWeek);
                 numberOfCompletedTextView.setText(Integer.toString(numberOfCompletedTasks));
 
+                //Iterate over all TaskLists and update their taskCount.
+                for(String taskList:taskListsTaskCount.keySet())
+                {
+                    int taskCount=taskListsTaskCount.get(taskList);
+                    mTaskNumGeneralDatabaseReference.child(taskList).child("taskNum").setValue(taskCount);
+                }
 
+                //Iterate over all TaskLists and update their taskDueCount.
+                for(String taskList:taskListsTasksDueCount.keySet())
+                {
+                    int taskDueCount=taskListsTasksDueCount.get(taskList);
+                    mTaskNumGeneralDatabaseReference.child(taskList).child("tasksDueCount").setValue(taskDueCount);
+                }
             }
 
             @Override
@@ -681,6 +682,17 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
+    //Update TaskList's task count in a HashMap
+    private void updateTaskCountInMap(HashMap<String, Integer> taskListsTaskCount, String taskListId) {
+        Integer taskCount=taskListsTaskCount.get(taskListId);
+        if(taskCount==null)
+            taskListsTaskCount.put(taskListId,1);
+        else
+            taskListsTaskCount.put(taskListId,taskCount+1);
+
+    }
+
 
     //Get's duedate filter (today/week/month) and check if current task's due date fits.
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -710,14 +722,6 @@ public class MainActivity extends AppCompatActivity {
                     return true;
                 }
                 break;
-//            case TASKS_DUE_MONTH:
-//                if(currentMonth==dueMonth){
-//                    return true;
-//                }
-//                break;
-
-
-
         }
         return false;
     }

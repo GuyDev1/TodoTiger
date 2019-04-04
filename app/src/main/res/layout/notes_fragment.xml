@@ -17,7 +17,10 @@
             android:layout_weight="1"
             android:ems="10"
             android:inputType="textMultiLine"
-            android:textSize="20sp"
+            android:textSize="18sp"
+            android:textColor="@color/black"
+            android:fontFamily="@font/open_sans_semibold"
+            app:fontFamily="@font/open_sans_semibold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />

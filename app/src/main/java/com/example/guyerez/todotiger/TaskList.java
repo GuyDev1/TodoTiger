@@ -13,6 +13,9 @@ public class TaskList {
     /** The number of tasks in the list */
     private int mTaskNum=0;
 
+    /** The number of tasks in the list that have a due date */
+    private int mTasksDueCount=0;
+
     /** The task list's ID on FireBase DB */
     private String mId;
 
@@ -52,6 +55,13 @@ public class TaskList {
     }
 
     /**
+     * Sets the number of tasks that have a due date in the list.
+     */
+    public void setTasksDueCount(int tasksDueCount) {
+        mTasksDueCount=tasksDueCount;
+    }
+
+    /**
      * Sets the list's ID.
      */
     public void setId(String id) {
@@ -78,6 +88,13 @@ public class TaskList {
      */
     public int getTaskNum() {
         return mTaskNum;
+    }
+
+    /**
+     * Returns the number of tasks that have a due date in the list.
+     */
+    public int getTasksDueCount() {
+        return mTasksDueCount;
     }
 
     /**

@@ -37,6 +37,7 @@ import android.widget.CompoundButton;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.Switch;
@@ -69,7 +70,9 @@ public class TaskInfoFragment extends Fragment {
 
     //View references - TextEdit, buttons, etc.
     private EditText mTaskTitle;
-    private EditText dueDate;
+    private TextView dueDate;
+    private ImageView dueDatePicker;
+    private TextView creationDate;
     private EditText reminderDate;
     private EditText reminderTime;
     private TextView mTaskNotes;
@@ -220,9 +223,13 @@ public class TaskInfoFragment extends Fragment {
             }
         });
 
+        //Set creation date TextView
+        creationDate=rootView.findViewById(R.id.creation_date_info);
+        Calendar creationCalendar=Calendar.getInstance();
+        creationDate.setText(AdapterUtil.getCreationDate(currentTask,creationCalendar));
 
         //LinearLayout containing the EditText's required to set a new reminder
-        setReminderLayout=rootView.findViewById(R.id.linearLayout4Inner);
+        setReminderLayout=rootView.findViewById(R.id.linearLayout5Inner);
         //Toggle to allow user to create a new reminder
         setReminderToggle=rootView.findViewById(R.id.set_reminder);
         //Reminder was set and still active
@@ -248,7 +255,6 @@ public class TaskInfoFragment extends Fragment {
 
         setReminderToggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                Log.d("wat", "onCheckedChanged: "+isChecked);
                 if(isChecked){
                     //The user wants to set a new reminder
                     setReminderLayout.setVisibility(View.VISIBLE);
@@ -271,7 +277,8 @@ public class TaskInfoFragment extends Fragment {
 
         //Initialize dueDatePicker related variables
         dueCalendar = Calendar.getInstance();
-        dueDate = (EditText) rootView.findViewById(R.id.due_date_picker);
+        dueDate = rootView.findViewById(R.id.due_date_time);
+        dueDatePicker=rootView.findViewById(R.id.due_date_picker);
         if (currentTask.getDueDate() != null) {
             dueDate.setText(sdf.format(currentTask.getDueDate()));
         }
@@ -292,7 +299,7 @@ public class TaskInfoFragment extends Fragment {
 
         };
 
-        dueDate.setOnClickListener(new View.OnClickListener() {
+        dueDatePicker.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View v) {

@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.icu.util.DateInterval;
 import android.os.Handler;
 import android.preference.PreferenceManager;
@@ -13,6 +14,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.view.menu.MenuBuilder;
 import android.support.v7.view.menu.MenuPopupHelper;
 import android.support.v7.widget.PopupMenu;
+import android.text.Html;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -23,6 +25,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -119,14 +122,11 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         final TextView titleTextView = (TextView) listItemView.findViewById(R.id.task_title);
         // Get the task's title from the currentTask object and set it in the text view
         titleTextView.setText(currentTask.getTitle());
-        //If the task is completed - title Strikethrough
-        titleTextView.setBackgroundResource(AdapterUtil.strikeCompleted(currentTask.getCompleted()));
-        //Set Title height to fit date TextView's appropriately
-        if(showCreated || showDue || showCompleted){
-            titleTextView.setHeight((int)TypedValue.applyDimension
-                    (TypedValue.COMPLEX_UNIT_DIP, 59,
-                            getContext().getResources().getDisplayMetrics()));
-        }
+        //Set onClick animation
+        titleTextView.setBackgroundResource(R.drawable.task_clicked);
+        //If the task is completed - title Strike-through
+        if(currentTask.getCompleted())
+            titleTextView.setPaintFlags(titleTextView.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
 
         //Initialize the check box and check it if the task was completed.
 
@@ -135,22 +135,12 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         checkBox.setChecked(currentTask.getCompleted());
 
         //Initialize the creation date TextView in the task_item.xml layout with the ID creation_date
-        TextView creationDateTextView = (TextView) listItemView.findViewById(R.id.creation_date);
-        //Get the task's creation date from the currentTask object and set it in the text view
-        creationDateTextView.setText(AdapterUtil.getCreationDate(currentTask,calendar));
-        if(!showCreated){
-            creationDateTextView.setVisibility(View.GONE);
-        }
-
-
-        //Initialize the creation date TextView in the task_item.xml layout with the ID creation_date
          final TextView dueDateTextView = (TextView) listItemView.findViewById(R.id.due_date);
         //Get the task's creation date from the currentTask object and set it in the text view
         dueDateTextView.setText(AdapterUtil.getDueOrCompletedDate(currentTask,dueDateTextView,calendar,activity,null));
         if(!showDue){
             dueDateTextView.setVisibility(View.GONE);
         }
-
 
 
         // Get the Task's priorityImage and allow the user to change the task's priority
@@ -171,13 +161,13 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                     public boolean onMenuItemSelected(MenuBuilder menu, MenuItem item) {
                         switch (item.getItemId()) {
                             case R.id.priority_urgent:
-                                AdapterUtil.setPriority(PRIORITY_URGENT,currentTask,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage,activity);
+                                AdapterUtil.setPriority(PRIORITY_URGENT,currentTask,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage);
                                 return true;
                             case R.id.priority_high:
-                                AdapterUtil.setPriority(PRIORITY_HIGH,currentTask,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage,activity);
+                                AdapterUtil.setPriority(PRIORITY_HIGH,currentTask,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage);
                                 return true;
                             case R.id.priority_default:
-                                AdapterUtil.setPriority(PRIORITY_DEFAULT,currentTask,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage,activity);
+                                AdapterUtil.setPriority(PRIORITY_DEFAULT,currentTask,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage);
                                 return true;
                             default:
                                 return false;
@@ -201,7 +191,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                 initDatabaseReferences(currentTask);
                     if (isChecked) {
                         //Update the Task as Checked (completed) in the DB and UI
-                        AdapterUtil.updateTaskChecked(titleTextView,dueDateTextView,currentTask,calendar,mTaskDatabaseReference,mAllTasksDatabaseReference,activity,showCompleted);
+                        AdapterUtil.updateTaskChecked(titleTextView,dueDateTextView,currentTask,calendar,mTaskDatabaseReference,mAllTasksDatabaseReference);
                         //cancel task's reminder if it had one, since it's completed
                         AdapterUtil.cancelTaskReminder(currentTask,activity);
                         //After a small delay for better animation effect
@@ -231,13 +221,20 @@ public class TaskAdapter extends ArrayAdapter<Task> {
         titleTextView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(activity instanceof TaskActivity){
                     //Use the TaskActivity getTaskInfo method to start TaskInfoFragment
                     ((TaskActivity)activity).getTaskInfo(currentTask);
-                }
-                if(activity instanceof SearchTask){
-                    ((SearchTask)activity).getTaskInfo(currentTask);
-                }
+
+
+            }
+        });
+
+        titleTextView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                    //Use the TaskActivity getTaskInfo method to start TaskInfoFragment
+                    ((TaskActivity)activity).getTaskInfo(currentTask);
+
+
 
             }
         });

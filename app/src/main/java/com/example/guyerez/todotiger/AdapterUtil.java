@@ -6,6 +6,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -37,10 +38,6 @@ import static com.example.guyerez.todotiger.TaskActivity.PRIORITY_URGENT;
 public class AdapterUtil {
 
     //Variables for moving Tasks between TaskLists - defined here to prevent inner class access problem
-    private static boolean flagAdd;
-    private static boolean flagDelete;
-    private static int taskCountAdd;
-    private static int taskCountDelete;
     private static ListView taskListsView;
     private static TaskListAdapter mTaskListAdapter;
     private static Dialog moveTaskDialog;
@@ -119,7 +116,7 @@ public class AdapterUtil {
         else{
             dueDateTextView.setTextColor(Color.parseColor("#000000"));
             dueDateTextView.setAlpha(0.54f);
-            return "Due: ";
+            return "";
         }
 
 
@@ -141,17 +138,9 @@ public class AdapterUtil {
     }
 
     public static void setPriority(int priorityLevel, Task task, DatabaseReference mTaskDatabaseReference,
-                             DatabaseReference mAllTasksDatabaseReference,ImageView priorityImage,Activity activity) {
+                             DatabaseReference mAllTasksDatabaseReference,ImageView priorityImage) {
         mTaskDatabaseReference.child("priority").setValue(priorityLevel);
         mAllTasksDatabaseReference.child("priority").setValue(priorityLevel);
-        //If we are in TaskActivity - set priorityChangedFlag to true - to indicate we changed
-        //the task's priority (so onChildChanged won't trigger a task count change).
-        if(activity instanceof TaskActivity){
-            ((TaskActivity)activity).setPriorityChangedFlag(true);
-        }
-        else if(activity instanceof SpecialTaskListActivity){
-            ((SpecialTaskListActivity)activity).setPriorityChangedFlag(true);
-        }
         task.setPriority(priorityLevel); //Update currentTask - keeping taskInfoFragment up to date
         setPriorityImage(priorityLevel,priorityImage);//Updating the image to show instant change of priority
 
@@ -159,17 +148,14 @@ public class AdapterUtil {
 
     //Update task's checked status - indicating that it's completed.
     public static void updateTaskChecked(TextView title,TextView dueDateTextView,Task task,Calendar calendar,
-                                   DatabaseReference mTaskDatabaseReference,DatabaseReference mAllTasksDatabaseReference,Activity activity,boolean showCompleted) {
+                                   DatabaseReference mTaskDatabaseReference,DatabaseReference mAllTasksDatabaseReference) {
         Date completionDate =calendar.getTime();
-        title.setBackgroundResource(R.drawable.strike_through);
+//        title.setBackgroundResource(R.drawable.strike_through);
+        title.setPaintFlags(title.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
         mTaskDatabaseReference.child("completed").setValue(true);
         mTaskDatabaseReference.child("completionDate").setValue(completionDate);
         mAllTasksDatabaseReference.child("completed").setValue(true);
         mAllTasksDatabaseReference.child("completionDate").setValue(completionDate);
-        if(showCompleted){
-            dueDateTextView.setText(getDueOrCompletedDate(task,dueDateTextView,calendar,activity,Boolean.TRUE));
-            dueDateTextView.setVisibility(View.VISIBLE);
-        }
     }
 
     //Cancel the task's reminder
@@ -182,7 +168,8 @@ public class AdapterUtil {
     //Update task's checked status - indicating that it's not completed (un-checking it)
     public static void updateTaskUnchecked(TextView title, TextView dueDateTextView, Task task, DatabaseReference mTaskDatabaseReference,
                                            DatabaseReference mAllTasksDatabaseReference,Calendar calendar,Activity activity) {
-        title.setBackgroundResource(R.drawable.task_clicked);
+//        title.setBackgroundResource(R.drawable.task_clicked);
+        title.setPaintFlags(title.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
         mTaskDatabaseReference.child("completed").setValue(false);
         mTaskDatabaseReference.child("completionDate").setValue(null);
         mAllTasksDatabaseReference.child("completed").setValue(false);
@@ -238,24 +225,31 @@ public class AdapterUtil {
     }
 
     //Get a list of the TaskLists so the user can choose where to move his task to
-    public static void getTaskLists(final Task taskClicked,ChildEventListener mChildEventListener2,DatabaseReference mTaskListDatabaseReference){
+    public static void getTaskLists(final Task taskClicked, DatabaseReference mTaskListDatabaseReference){
         //Starts a childEventListener to get the list of TaskLists
-        mChildEventListener2 = new ChildEventListener() {
+        ChildEventListener mChildEventListener2 = new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
 
                 TaskList taskList = dataSnapshot.getValue(TaskList.class);
                 //Don't show current TaskList in the move-to ListView (you're already there)
-                if(isRelevantTaskList(taskList,taskClicked)) {
+                if (isRelevantTaskList(taskList, taskClicked)) {
                     mTaskListAdapter.add(taskList);
                 }
             }
-            public void onChildChanged(DataSnapshot dataSnapshot, String s) {}
+
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+            }
+
             public void onChildRemoved(DataSnapshot dataSnapshot) {
 
             }
-            public void onChildMoved(DataSnapshot dataSnapshot, String s) {}
-            public void onCancelled(DatabaseError databaseError) {}
+
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+            }
+
+            public void onCancelled(DatabaseError databaseError) {
+            }
         };
         mTaskListDatabaseReference.addChildEventListener(mChildEventListener2);
     }
@@ -290,8 +284,6 @@ public class AdapterUtil {
                 // Find the current task list that was clicked on
                 TaskList currentTaskList = mTaskListAdapter.getItem(position);
 
-                Log.d("bro", "onItemClick: "+currentTaskList.getTitle());
-
                 //get the current task list's ID and title
                 String currentTaskListId=currentTaskList.getId();
                 String currentTaskListTitle=currentTaskList.getTitle();
@@ -299,12 +291,6 @@ public class AdapterUtil {
                 DatabaseReference mTaskDatabaseReference2=mFirebaseDatabase.getReference().child("users")
                         .child(currentUser).child("TaskLists")
                         .child(currentTaskListId).child("tasks");
-                final DatabaseReference  mTaskNumDatabaseReference2=mFirebaseDatabase.getReference().child("users")
-                        .child(currentUser).child("TaskLists")
-                        .child(currentTaskListId);
-                final DatabaseReference  mTaskNumDatabaseReference=mFirebaseDatabase.getReference().child("users")
-                        .child(currentUser).child("TaskLists")
-                        .child(task.getTaskListId());
 
                 //make changeTaskListFlag true - so SpecialTaskListActivity will respond to onChildChanged
                 SpecialTaskListActivity.changeTaskListFlag=true;
@@ -315,49 +301,6 @@ public class AdapterUtil {
                 if(adapter instanceof TaskAdapter){
                     ((TaskAdapter)adapter).remove(task);
                 }
-
-                //Set flag to true to avoid an infinite loop while updating the taskNum for that TaskList
-                flagAdd=true;
-                mTaskNumDatabaseReference2.addValueEventListener(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        TaskList taskList=dataSnapshot.getValue(TaskList.class);
-                        if(taskList!=null){
-                            taskCountAdd =taskList.getTaskNum();
-                            if(flagAdd) {
-                                flagAdd=false;
-                                mTaskNumDatabaseReference2.child("taskNum").setValue(taskCountAdd + 1);
-                            }
-                        }
-
-
-
-                    }
-
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {
-                        System.out.println("The read failed: " + databaseError.getCode());
-                    }
-                });
-
-                //Set flag to true to avoid an infinite loop while updating the taskNum for that TaskList
-                flagDelete=true;
-                mTaskNumDatabaseReference.addValueEventListener(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        taskCountDelete = dataSnapshot.getValue(TaskList.class).getTaskNum();
-                        if (flagDelete) {
-                            flagDelete = false;
-                            mTaskNumDatabaseReference.child("taskNum").setValue(taskCountDelete - 1);
-                        }
-                    }
-
-                        @Override
-                        public void onCancelled(DatabaseError databaseError) {
-                            System.out.println("The read failed: " + databaseError.getCode());
-                        }
-                    });
-
 
                 moveTaskDialog.dismiss();
                 Toast.makeText(activity,"Task moved!", Toast.LENGTH_LONG).show();
@@ -371,8 +314,7 @@ public class AdapterUtil {
 
     //Show the user a dialog to confirm task deletion - and respond according to user choice.
     public static void confirmDeleteDialog(final Task taskClicked,final Activity activity, final DatabaseReference mTaskDatabaseReference,
-                                     final DatabaseReference mAllTasksDatabaseReference,final Object adapter,
-                                     final DatabaseReference mTaskNumDatabaseReference){
+                                     final DatabaseReference mAllTasksDatabaseReference,final Object adapter){
         AlertDialog.Builder builder = new AlertDialog.Builder(activity);
         //Set the title
         builder.setTitle("Delete this task?");
@@ -387,33 +329,6 @@ public class AdapterUtil {
                 }
                 else{
                     ((TaskAdapter)adapter).remove(taskClicked);
-                }
-                //Check if it's not a completed task (if it is, no need to decrease TaskList's taskCount.
-                if(!taskClicked.getCompleted()){
-                    Log.d("completed?", "onClick: ");
-                    //Set flag to true to avoid an infinite loop while updating the taskNum for that TaskList
-                    flagDelete=true;
-                    mTaskNumDatabaseReference.addValueEventListener(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(DataSnapshot dataSnapshot) {
-                            taskCountDelete =dataSnapshot.getValue(TaskList.class).getTaskNum();
-                            Log.d("wat1234556-1", "onDataChange: ");
-                            if(flagDelete) {
-                                flagDelete=false;
-                                Log.d("wat1234556-2", "onDataChange: ");
-                                mTaskNumDatabaseReference.child("taskNum").setValue(taskCountDelete - 1);
-                            }
-
-
-
-
-                        }
-
-                        @Override
-                        public void onCancelled(DatabaseError databaseError) {
-                            System.out.println("The read failed: " + databaseError.getCode());
-                        }
-                    });
                 }
 
                 if(taskClicked.getReminderDate()!=null){

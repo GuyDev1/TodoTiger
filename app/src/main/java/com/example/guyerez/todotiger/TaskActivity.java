@@ -2,16 +2,11 @@ package com.example.guyerez.todotiger;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
-import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
-import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
@@ -20,24 +15,21 @@ import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 
-import android.view.Window;
-import android.widget.Adapter;
 import android.widget.AdapterView;
 
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ListView;
 
 import android.widget.TextView;
-import android.widget.Toast;
+
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -46,26 +38,21 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Comparator;
 import java.util.Date;
-import java.util.Locale;
 
 public class TaskActivity extends AppCompatActivity {
     final Context context = this;
     //The current TaskAdapter
     private TaskAdapter mTaskAdapter;
-    //This TaskList's task count (number of tasks in TaskList)
-    private int taskCount;
     // TextView that is displayed when the list is empty //
     private TextView mEmptyStateTextView;
     //The loading indicator //
     private View loadingIndicator;
     //Edit text and button for creating new tasks quickly
     private EditText mTaskEditText;
-    private Button mTaskAddButton;
+    private ImageButton mTaskAddButton;
     //Show completed tasks boolean
     public static int tasksToShow;
 
@@ -96,32 +83,14 @@ public class TaskActivity extends AppCompatActivity {
     // Firebase instance variables
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mTaskDatabaseReference;
-    private DatabaseReference mTaskNumDatabaseReference;
     private ChildEventListener mChildEventListener;
-    private ChildEventListener mChildEventListener2;
-    private DatabaseReference mTaskDatabaseReference2;
     private DatabaseReference mTaskListDatabaseReference;
-    private DatabaseReference mTaskNumDatabaseReference2;
     private DatabaseReference mAllTasksDatabaseReference;
-
-    //Variables for moving Tasks from one TaskList to another
-    private int taskCount2;
-    private boolean flag;
-    private TaskListAdapter mTaskListAdapter;
-    private ListView taskListsView;
-    private String currentTaskListId;
-    private String currentTaskListTitle;
-    private Dialog dialog;
 
     //Variables for current user and current TaskList from SharedPreferences
     private String currentUser;
     private String thisTaskList;
     private String thisTaskListTitle;
-
-    //A temporary field to hold the latest task changed - get over Firebase offline-persistence bug
-    private Task latestTaskChanged;
-    //A flag to avoid incorrect use of onChildChanged when editing Task's priority
-    private boolean priorityChangedFlag=false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -153,7 +122,9 @@ public class TaskActivity extends AppCompatActivity {
         // Initialize references to views
 
         mTaskEditText = (EditText) findViewById(R.id.task_edit_text);
-        mTaskAddButton = (Button) findViewById(R.id.add_task_button);
+        mTaskAddButton = findViewById(R.id.add_task_button);
+        //set onTouch listener for proper animation
+        AdapterUtil.setImageViewClickAnimation(mTaskAddButton);
 
         // Enable add button when input is not empty
         mTaskEditText.addTextChangedListener(new TextWatcher() {
@@ -165,8 +136,10 @@ public class TaskActivity extends AppCompatActivity {
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 if (charSequence.toString().trim().length() > 0) {
                     mTaskAddButton.setEnabled(true);
+                    mTaskAddButton.setClickable(true);
                 } else {
                     mTaskAddButton.setEnabled(false);
+                    mTaskAddButton.setClickable(false);
                 }
             }
 
@@ -193,9 +166,6 @@ public class TaskActivity extends AppCompatActivity {
 
                 //Create a copy of that Task under "AllTasks" in DB
                 mAllTasksDatabaseReference.child(taskId).setValue(task);
-
-                //add that task to the list's task count
-                mTaskNumDatabaseReference.child("taskNum").setValue(taskCount+1);
 
                 //Increase TaskIdNumber by 1
                 setNewTaskId(taskIdNumber+1);
@@ -228,11 +198,11 @@ public class TaskActivity extends AppCompatActivity {
         // Make the {@link ListView} use the {@link TaskAdapter} defined above, so that the
         // {@link ListView} will display list items for each {@link Task} in the list.
         listView.setAdapter(mTaskAdapter);
-
-
         //Set context menu for ListView
         listView.setLongClickable(true);
         registerForContextMenu(listView);
+
+
 
 
         //Get reference for the task list that belongs to the logged in user and attach the database listener
@@ -241,13 +211,10 @@ public class TaskActivity extends AppCompatActivity {
                     .child(currentUser).child("TaskLists").child(thisTaskList).child("tasks");
             mAllTasksDatabaseReference=mFirebaseDatabase.getReference().child("users")
                     .child(currentUser).child("allTasks");
-            //Get a reference to check the number of tasks in the TaskList
-            mTaskNumDatabaseReference=mFirebaseDatabase.getReference().child("users")
-                    .child(currentUser).child("TaskLists").child(thisTaskList);
             //Get a reference to obtain the TaskList ListView for moving around tasks.
             mTaskListDatabaseReference=mFirebaseDatabase.getReference().child("users")
                     .child(currentUser).child("TaskLists");
-            //Check if this user has Tasks if not - show EmptyStateTextView
+            //Check if this TaskList contains Tasks. If not - show EmptyStateTextView
             DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference().child("users")
                     .child(currentUser).child("TaskLists")
                     .child(thisTaskList);
@@ -272,25 +239,6 @@ public class TaskActivity extends AppCompatActivity {
             startActivity(new Intent(TaskActivity.this, MainActivity.class));
         }
 
-
-
-        //add listener to get the current task count in this specific task list
-        mTaskNumDatabaseReference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                TaskList taskList = dataSnapshot.getValue(TaskList.class);
-                if(taskList!=null){
-                    taskCount=taskList.getTaskNum();
-                    Log.d("post count: ", "" + taskCount);
-                }
-
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                System.out.println("The read failed: " + databaseError.getCode());
-            }
-        });
 
     }
 
@@ -412,32 +360,6 @@ public class TaskActivity extends AppCompatActivity {
 
                 }
                 public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-                    Task task = dataSnapshot.getValue(Task.class);
-                    //The user changed the task's priority directly from the TaskList's view
-                    //Change priorityChanged to false, to indicate the priority is now set
-                    if(priorityChangedFlag) {
-                        priorityChangedFlag = false;
-                    }
-
-                    else{
-                        //Otherwise - the user must have completed/uncompleted a task
-                        //In case it's just the offline-persistence bug causing a double trigger, reset latestTaskChanged
-                        if(latestTaskChanged!=null && latestTaskChanged.getCompleted()==task.getCompleted()){
-                            latestTaskChanged=null;
-                        }
-                        else{
-                            latestTaskChanged=task;
-                            if(task.getCompleted()){
-                                //reduce the number of open tasks by 1
-                                mTaskNumDatabaseReference.child("taskNum").setValue(taskCount-1);
-                            }
-                            else{
-                                //The task has been unchecked - it's relevant again, add it to the task count
-                                mTaskNumDatabaseReference.child("taskNum").setValue(taskCount+1);
-                            }
-                        }
-                    }
-
                 }
                 @SuppressLint("NewApi")
                 public void onChildRemoved(DataSnapshot dataSnapshot) {
@@ -491,7 +413,7 @@ public class TaskActivity extends AppCompatActivity {
 
             case 1:
                 //Pop a dialog and allow the user to choose a TaskList to move the current task to
-                AdapterUtil.getTaskLists(taskClicked,mChildEventListener2,mTaskListDatabaseReference);
+                AdapterUtil.getTaskLists(taskClicked, mTaskListDatabaseReference);
                 AdapterUtil.setTaskMoveDialog(this);
                 AdapterUtil.moveTaskToSelectedList(taskClicked,currentUser,mTaskDatabaseReference,
                         mFirebaseDatabase,mAllTasksDatabaseReference,this,mTaskAdapter);
@@ -499,7 +421,7 @@ public class TaskActivity extends AppCompatActivity {
 
             case 2:
                 //Confirm delete and perform the task's deletion
-                AdapterUtil.confirmDeleteDialog(taskClicked,this,mTaskDatabaseReference,mAllTasksDatabaseReference,mTaskAdapter,mTaskNumDatabaseReference);
+                AdapterUtil.confirmDeleteDialog(taskClicked,this,mTaskDatabaseReference,mAllTasksDatabaseReference,mTaskAdapter);
                 break;
 
 
@@ -739,9 +661,6 @@ public class TaskActivity extends AppCompatActivity {
 
         }
 
-        public void setPriorityChangedFlag(boolean b){
-            priorityChangedFlag=b;
-        }
     }
 
 

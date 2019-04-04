@@ -2,9 +2,10 @@
 <resources>
     <color name="colorPrimary">#ff5400</color>
     <color name="colorPrimaryDark">#ff7b06</color>
-    <color name="colorAccent">#48c860</color>
+    <color name="colorAccent">#ff5400</color>
     <color name="colorTaskList">#ffffff</color>
     <color name="background">#eef0f5</color>
+    <color name="divider">#969caa</color>
     <color name="red">#ff0000</color>
     <color name="green">#009900</color>
     <color name="black">#000000</color>

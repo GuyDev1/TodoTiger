@@ -55,7 +55,10 @@
             android:layout_marginLeft="8dp"
             android:layout_marginStart="8dp"
             android:text="Title:"
-            android:textSize="21sp" />
+            android:textSize="18sp"
+            android:textColor="@color/black"
+            android:fontFamily="@font/open_sans_semibold"
+            app:fontFamily="@font/open_sans_semibold" />
 
         <EditText
             android:id="@+id/input_task_title"
@@ -63,7 +66,10 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="8dp"
             android:layout_marginStart="8dp"
-            android:textSize="21sp">
+            android:textSize="18sp"
+            android:textColor="@color/black"
+            android:fontFamily="@font/open_sans_semibold"
+            app:fontFamily="@font/open_sans_semibold">
 
         </EditText>
 
@@ -80,27 +86,15 @@
         app:layout_constraintTop_toBottomOf="@+id/linearLayout2">
 
         <TextView
-            android:id="@+id/due_date"
+            android:id="@+id/creation_date_info"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="8dp"
             android:layout_marginStart="8dp"
-            android:text="Due:"
-            android:textSize="21sp" />
-
-        <EditText
-            android:id="@+id/due_date_picker"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="8dp"
-            android:layout_marginStart="8dp"
-            android:clickable="true"
-            android:focusable="false"
-            android:hint="Due Date"
-            android:inputType="date"
-            android:textSize="20sp">
-
-        </EditText>
+            android:textSize="18sp"
+            android:textColor="@color/black"
+            android:fontFamily="@font/open_sans_semibold"
+            app:fontFamily="@font/open_sans_semibold" />
 
     </LinearLayout>
 
@@ -114,6 +108,52 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/linearLayout3">
 
+        <TextView
+            android:id="@+id/due_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="8dp"
+            android:layout_marginStart="8dp"
+            android:text="Due:"
+            android:textSize="18sp"
+            android:textColor="@color/black"
+            android:fontFamily="@font/open_sans_semibold"
+            app:fontFamily="@font/open_sans_semibold" />
+
+        <ImageView
+            android:id="@+id/due_date_picker"
+            android:layout_width="19dp"
+            android:layout_height="19dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="12dp"
+            android:clickable="true"
+            android:focusable="false"
+            android:src="@drawable/timer">
+
+        </ImageView>
+
+        <TextView
+            android:id="@+id/due_date_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:layout_marginStart="12dp"
+            android:textColor="@color/black"
+            android:fontFamily="@font/open_sans_semibold"
+            app:fontFamily="@font/open_sans_semibold"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/linearLayout5"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="22dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout4">
+
 
         <TextView
             android:id="@+id/remind_date"
@@ -122,7 +162,10 @@
             android:layout_marginLeft="8dp"
             android:layout_marginStart="8dp"
             android:text="Reminder:"
-            android:textSize="21sp" />
+            android:textSize="18sp"
+            android:textColor="@color/black"
+            android:fontFamily="@font/open_sans_semibold"
+            app:fontFamily="@font/open_sans_semibold" />
 
         <android.support.v7.widget.SwitchCompat
             android:id="@+id/set_reminder"
@@ -135,13 +178,13 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/linearLayout4Inner"
+        android:id="@+id/linearLayout5Inner"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/linearLayout4">
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout5">
 
         <EditText
             android:id="@+id/remind_date_picker"
@@ -153,7 +196,10 @@
             android:focusable="false"
             android:hint="Date"
             android:inputType="date"
-            android:textSize="20sp">
+            android:textSize="18sp"
+            android:textColor="@color/black"
+            android:fontFamily="@font/open_sans_semibold"
+            app:fontFamily="@font/open_sans_semibold">
 
         </EditText>
 
@@ -167,20 +213,23 @@
             android:focusable="false"
             android:hint="Time"
             android:inputType="date"
-            android:textSize="20sp">
+            android:textSize="18sp"
+            android:textColor="@color/black"
+            android:fontFamily="@font/open_sans_semibold"
+            app:fontFamily="@font/open_sans_semibold">
 
         </EditText>
 
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/linearLayout5"
+        android:id="@+id/linearLayout6"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="22dp"
         android:orientation="horizontal"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/linearLayout4Inner">
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout5Inner">
 
         <TextView
             android:id="@+id/priority"
@@ -189,7 +238,10 @@
             android:text="Priority:"
             android:layout_marginLeft="8dp"
             android:layout_marginStart="8dp"
-            android:textSize="21dp"
+            android:textSize="18sp"
+            android:textColor="@color/black"
+            android:fontFamily="@font/open_sans_semibold"
+            app:fontFamily="@font/open_sans_semibold"
             tools:layout_editor_absoluteX="0dp"
             tools:layout_editor_absoluteY="287dp" />
 
@@ -206,13 +258,13 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/linearLayout6"
+        android:id="@+id/linearLayout7"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="22dp"
         android:orientation="horizontal"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/linearLayout5">
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout6">
 
         <TextView
             android:id="@+id/notes_title"
@@ -221,7 +273,10 @@
             android:layout_marginLeft="8dp"
             android:layout_marginStart="8dp"
             android:text="Notes:"
-            android:textSize="21sp" />
+            android:textSize="18sp"
+            android:textColor="@color/black"
+            android:fontFamily="@font/open_sans_semibold"
+            app:fontFamily="@font/open_sans_semibold" />
 
         <TextView
             android:id="@+id/notes"
@@ -230,7 +285,10 @@
             android:layout_marginLeft="8dp"
             android:layout_marginStart="8dp"
             android:text="Enter a note..."
-            android:textSize="21sp" />
+            android:textSize="18sp"
+            android:textColor="@color/black"
+            android:fontFamily="@font/open_sans_semibold"
+            app:fontFamily="@font/open_sans_semibold" />
 
     </LinearLayout>
 

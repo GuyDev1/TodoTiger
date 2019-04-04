@@ -6,7 +6,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".TaskActivity">
+    tools:context=".TaskActivity"
+    android:background="@color/background">
 
     <ListView
         android:longClickable="true"
@@ -15,20 +16,23 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginLeft="20dp"
         android:transcriptMode="alwaysScroll"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/linearLayout"
+        android:background="@color/background"
         tools:listitem="@layout/tlist_item" />
 
     <LinearLayout
         android:id="@+id/linearLayout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="60dp"
         android:layout_marginBottom="16dp"
-        android:layout_marginTop="16dp"
         android:orientation="horizontal"
+        android:background="@color/colorTaskList"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
@@ -38,26 +42,37 @@
         <EditText
             android:id="@+id/task_edit_text"
             android:layout_width="0dp"
+            android:layout_marginStart="20dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            android:textSize="15sp"
+            android:textColor="@color/black"
+            android:fontFamily="@font/open_sans_semibold"
+            app:fontFamily="@font/open_sans_semibold"
+            android:hint="Add a new task..."/>
 
-        <Button
+        <ImageButton
             android:id="@+id/add_task_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:layout_marginLeft="8dp"
+            android:layout_width="39dp"
+            android:layout_height="27dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="20dp"
+            android:background="@color/colorTaskList"
             android:enabled="false"
-            android:text="add" />
+            android:src="@drawable/add_task"/>
 
     </LinearLayout>
 
     <FrameLayout
         android:id="@+id/frag_container"
         android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        android:layout_height="match_parent">
+        tools:layout_editor_absoluteX="0dp"
+        tools:layout_editor_absoluteY="0dp">
+
     </FrameLayout>
 
 
@@ -82,5 +97,7 @@
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+
 
 </android.support.constraint.ConstraintLayout>

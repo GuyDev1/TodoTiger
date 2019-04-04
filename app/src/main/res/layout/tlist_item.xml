@@ -4,15 +4,12 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="50dp"
-    android:layout_marginRight="11dp"
-    android:layout_marginLeft="11dp"
     android:background="@drawable/tlist_rounded_item">
 
     <TextView
         android:id="@+id/list_title"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="?attr/selectableItemBackground"
         android:minHeight="30dp"
         android:layout_marginLeft="13.3dp"
         android:layout_marginTop="15dp"
@@ -39,4 +36,30 @@
         app:layout_constraintBaseline_toBaselineOf="@+id/list_title"
         app:layout_constraintEnd_toEndOf="parent"
         tools:text="0" />
+
+    <TextView
+        android:id="@+id/num_of_tasks_due"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="4dp"
+        android:layout_marginStart="307.7dp"
+        android:textSize="15sp"
+        android:textColor="@color/colorPrimary"
+        android:fontFamily="@font/open_sans_semibold"
+        app:fontFamily="@font/open_sans_semibold"
+        app:layout_constraintBaseline_toBaselineOf="@+id/list_title"
+        app:layout_constraintRight_toLeftOf="@id/tasks_due_indicator"
+        tools:text="0" />
+
+    <ImageView
+        android:id="@+id/tasks_due_indicator"
+        android:layout_width="15dp"
+        android:layout_height="15dp"
+        android:layout_marginEnd="16dp"
+        android:src="@drawable/timer"
+        android:layout_marginTop="3dp"
+        app:layout_constraintRight_toLeftOf="@id/num_of_tasks"
+        app:layout_constraintTop_toTopOf="@id/list_title">
+
+    </ImageView>
 </android.support.constraint.ConstraintLayout>

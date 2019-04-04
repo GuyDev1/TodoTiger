@@ -3,46 +3,35 @@ package com.example.guyerez.todotiger;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
-import android.os.Handler;
+import android.graphics.Paint;
 import android.preference.PreferenceManager;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.view.menu.MenuBuilder;
 import android.support.v7.view.menu.MenuPopupHelper;
-import android.util.Log;
 import android.util.SparseArray;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.BaseExpandableListAdapter;
 import android.widget.CheckBox;
 import android.widget.CheckedTextView;
 import android.widget.CompoundButton;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.firebase.database.ChildEventListener;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Locale;
 
 import static com.example.guyerez.todotiger.TaskActivity.PRIORITY_DEFAULT;
@@ -61,9 +50,6 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 
     //SharedPreference fields
     private  String currentUser;
-    private  boolean showCreated;
-    private  boolean showDue;
-    private  boolean showCompleted;
 
 
     private LayoutInflater inflater;
@@ -77,32 +63,15 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mAllTasksDatabaseReference;
     private DatabaseReference mTaskListDatabaseReference;
-    private DatabaseReference mTaskDatabaseReference2;
     private DatabaseReference mTaskNumDatabaseReference2;
-    private DatabaseReference mTaskNumDatabaseReferenceGeneral;
     private ChildEventListener mChildEventListener;
-    private ChildEventListener mChildEventListener2;
 
-    //Variables for moving Tasks from one TaskList to another
-    private int taskCount2;
-    private boolean flag;
-    private TaskListAdapter mTaskListAdapter;
-    private ListView taskListsView;
-    private String currentTaskListId;
-    private String currentTaskListTitle;
-    private Dialog moveTaskDialog;
+    //Adapter reference for confirm delete dialog behavior in AdapterUtil
     private ExpandableListAdapter adapter;
-
 
     //Define task priority menu components
     private MenuBuilder menuBuilder;
     private MenuPopupHelper optionsMenu;
-
-    //Flag to prevent infinite loop while updating TaskList taskCount when completing a task
-    private boolean flagCompleted;
-
-    //Task Count field for a general TaskList
-    private int taskCountGeneral;
 
 
     public ExpandableListAdapter(Activity act, SparseArray<TaskGroup> taskGroups) {
@@ -143,23 +112,28 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
         if (convertView == null) {
             convertView = inflater.inflate(R.layout.task_item, null);
         }
-
         //Get task's title
         final TextView title=convertView.findViewById(R.id.task_title);
         title.setText(task.getTitle());
 
-        //If the task is completed - title Strikethrough
-        title.setBackgroundResource(AdapterUtil.strikeCompleted(task.getCompleted()));
+        //Set onClick animation
+        title.setBackgroundResource(R.drawable.task_clicked);
 
-        //Set title onClickListener
+        //If the task is completed - title Strikethrough
+        if(task.getCompleted())
+            title.setPaintFlags(title.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+//        title.setBackgroundResource(AdapterUtil.strikeCompleted(task.getCompleted()));
+
+        //When the user clicks the task - enter the taskInfoFragment
         title.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                if(activity instanceof SpecialTaskListActivity){
+                    //Use the TaskActivity getTaskInfo method to start TaskInfoFragment
+                    ((SpecialTaskListActivity)activity).getTaskInfo(task);
+                }
                 if(activity instanceof SearchTask){
                     ((SearchTask)activity).getTaskInfo(task);
-                }
-                else{
-                    ((SpecialTaskListActivity)activity).getTaskInfo(task);
                 }
 
             }
@@ -191,7 +165,7 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
                             case ACTION_MOVE_TO:
                                 //Open a dialog and allow the user to choose a TaskList to move the current task to
                                 initDatabaseReferencesForTaskOptions(task);
-                                AdapterUtil.getTaskLists(task,mChildEventListener2,mTaskListDatabaseReference);
+                                AdapterUtil.getTaskLists(task, mTaskListDatabaseReference);
                                 AdapterUtil.setTaskMoveDialog(activity);
 
                                 AdapterUtil.moveTaskToSelectedList(task,currentUser,
@@ -201,7 +175,7 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
                             case ACTION_DELETE:
                                 //Confirm delete and perform the task's deletion
                                 initDatabaseReferencesForTaskOptions(task);
-                                AdapterUtil.confirmDeleteDialog(task,activity,mTaskDatabaseReference,mAllTasksDatabaseReference,adapter,mTaskNumDatabaseReference2);
+                                AdapterUtil.confirmDeleteDialog(task,activity,mTaskDatabaseReference,mAllTasksDatabaseReference,adapter);
 
                                 break;
 
@@ -215,30 +189,11 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
             }
         });
 
-        //Set Title height to fit date TextView's appropriately
-        if(showCreated || showDue || showCompleted){
-            title.setHeight((int) TypedValue.applyDimension
-                    (TypedValue.COMPLEX_UNIT_DIP, 59,
-                            activity.getResources().getDisplayMetrics()));
-        }
 
-        //Initialize the creation date TextView in the task_item.xml layout with the ID creation_date
-        TextView creationDateTextView = (TextView) convertView.findViewById(R.id.creation_date);
-        //Get the task's creation date from the currentTask object and set it in the text view
-        creationDateTextView.setText(AdapterUtil.getCreationDate(task,calendar));
-        if(!showCreated){
-            creationDateTextView.setVisibility(View.GONE);
-        }
-
-
-        //Initialize the creation date TextView in the task_item.xml layout with the ID creation_date
+        //Initialize the due date TextView in the task_item.xml layout with the ID due_date
         final TextView dueDateTextView = (TextView) convertView.findViewById(R.id.due_date);
-        //Get the task's creation date from the currentTask object and set it in the text view
+        //Get the task's due date from the currentTask object and set it in the text view
         dueDateTextView.setText(AdapterUtil.getDueOrCompletedDate(task,dueDateTextView,calendar,activity,null));
-        if(!showDue){
-            //The user preferences is to hide the dueDate
-            dueDateTextView.setVisibility(View.GONE);
-        }
 
         //Initialize the check box and check it if the task was completed.
         CheckBox checkBox = (CheckBox) convertView.findViewById(R.id.check_box);
@@ -251,21 +206,9 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
                 initDatabaseReferences(task);
                     if (isChecked) {
                         //Update the Task as Checked (completed) in the DB and UI
-                        AdapterUtil.updateTaskChecked(title,dueDateTextView,task,calendar,mTaskDatabaseReference,mAllTasksDatabaseReference,activity,showCompleted);
+                        AdapterUtil.updateTaskChecked(title,dueDateTextView,task,calendar,mTaskDatabaseReference,mAllTasksDatabaseReference);
                         //cancel task's reminder if it had one, since it's completed
                         AdapterUtil.cancelTaskReminder(task,activity);
-
-                        //If the user is in SearchTask - update relevant TaskList's TaskCount
-                        //If he's in SpecialTaskListActivity - that activity takes care of it,
-                        //Because we need to update the UI internally.
-                        if(activity instanceof SearchTask){
-                            mTaskNumDatabaseReferenceGeneral = mFirebaseDatabase.getReference().child("users")
-                                    .child(currentUser).child("TaskLists").child(task.getTaskListId());
-                            //Get the task count in this Task's TaskList
-                            //And remove this task from the task count (it has been completed)
-                            addTaskNumListenerGeneral();
-
-                        }
 
                     } else {
                         //Update the Task as unChecked (not completed) in the DB and UI
@@ -296,13 +239,13 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
                     public boolean onMenuItemSelected(MenuBuilder menu, MenuItem item) {
                         switch (item.getItemId()) {
                             case R.id.priority_urgent:
-                                AdapterUtil.setPriority(PRIORITY_URGENT,task,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage,activity);
+                                AdapterUtil.setPriority(PRIORITY_URGENT,task,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage);
                                 return true;
                             case R.id.priority_high:
-                                AdapterUtil.setPriority(PRIORITY_HIGH,task,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage,activity);
+                                AdapterUtil.setPriority(PRIORITY_HIGH,task,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage);
                                 return true;
                             case R.id.priority_default:
-                                AdapterUtil.setPriority(PRIORITY_DEFAULT,task,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage,activity);
+                                AdapterUtil.setPriority(PRIORITY_DEFAULT,task,mTaskDatabaseReference,mAllTasksDatabaseReference,priorityImage);
                                 return true;
                             default:
                                 return false;
@@ -387,16 +330,13 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 
     @Override
     public boolean isChildSelectable(int groupPosition, int childPosition) {
-        return false;
+        return true;
     }
 
 
     private void initSharedPreferences(){
         //Get Settings for Task UI preferences
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(activity);
-        showCreated=settings.getBoolean("show_created_date",true);
-        showDue=settings.getBoolean("show_due_date",true);
-        showCompleted=settings.getBoolean("show_completed_date",true);
         //Get current logged in user from SharedPreferences
         SharedPreferences currentData = activity.getSharedPreferences("MyPref", Context.MODE_PRIVATE);
         currentUser = currentData.getString("userId", null);
@@ -439,9 +379,6 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
                 .child("allTasks");
         mTaskListDatabaseReference=mFirebaseDatabase.getReference().child("users")
                 .child(currentUser).child("TaskLists");
-        mTaskNumDatabaseReference2=mFirebaseDatabase.getReference().child("users")
-                .child(currentUser).child("TaskLists")
-                .child(task.getTaskListId());
     }
 
 
@@ -455,30 +392,6 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
     }
 
 
-    //Add a listener to the number of tasks in the TaskList that this task belongs to
-    private void addTaskNumListenerGeneral(){
-        //Set flag to true to avoid an infinite loop while updating the taskNum for that TaskList
-        flagCompleted=true;
-        mTaskNumDatabaseReferenceGeneral.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                TaskList taskList = dataSnapshot.getValue(TaskList.class);
-                if (taskList != null) {
-                    taskCountGeneral = taskList.getTaskNum();
-                    if(flagCompleted) {
-                        flagCompleted=false;
-                        mTaskNumDatabaseReferenceGeneral.child("taskNum").setValue(taskCountGeneral - 1);
-                    }
-                }
-
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                System.out.println("The read failed: " + databaseError.getCode());
-            }
-        });
-    }
 
 
 

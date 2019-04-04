@@ -173,7 +173,6 @@ public class SearchTask extends AppCompatActivity {
                         }
                     }
                     if (taskGroups.size() != 0) {
-                        Log.d("here2", "onDataChange: ");
                         showEmptyStateView(false);
                         showLoadingIndicator(false);
                     }
@@ -185,7 +184,6 @@ public class SearchTask extends AppCompatActivity {
 
                 } else {
                     //Found no tasks, stop loading and alert the user.
-                    Log.d("here3", "onDataChange: ");
                     showLoadingIndicator(false);
                     showEmptyStateView(true);
                 }

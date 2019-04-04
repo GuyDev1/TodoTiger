@@ -8,6 +8,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -56,6 +57,22 @@ public class TaskListAdapter extends ArrayAdapter<TaskList> {
         TextView numOfTasks = (TextView) listItemView.findViewById(R.id.num_of_tasks);
         // Get the task list's number of tasks from the currentTaskList object and set it in the text view
         numOfTasks.setText(String.format(Locale.getDefault(), "%d", currentTaskList.getTaskNum()));
+        // Find the TextView in the tlist_item.xml layout with the ID num_of_tasks_due.
+        TextView numOfTasksDue = (TextView) listItemView.findViewById(R.id.num_of_tasks_due);
+        numOfTasksDue.setVisibility(View.GONE);
+        //Find the ImageView for the Due clock icon - default view is gone, unless there are tasks due
+        ImageView tasksDueIndicator=listItemView.findViewById(R.id.tasks_due_indicator);
+        tasksDueIndicator.setVisibility(View.GONE);
+        //Get the task list's number of tasks with a due date from the currentTaskList object and set it in the text view
+        //Show the Due clock icon and the number of tasks due if there is 1 task due or more
+        if(currentTaskList.getTasksDueCount()>0)
+        {
+            numOfTasksDue.setText(String.format(Locale.getDefault(), "%d", currentTaskList.getTasksDueCount()));
+            numOfTasksDue.setVisibility(View.VISIBLE);
+            tasksDueIndicator.setVisibility(View.VISIBLE);
+
+        }
+
         // Return the whole list item layout (containing 2 TextViews) so that it can be shown in the ListView.
         return listItemView;
     }

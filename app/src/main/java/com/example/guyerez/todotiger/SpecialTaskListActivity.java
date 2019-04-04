@@ -26,6 +26,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ExpandableListView;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -56,15 +57,13 @@ public class SpecialTaskListActivity extends AppCompatActivity {
     private View loadingIndicator;
     //Edit text and button for adding tasks to Inbox
     private EditText mTaskEditText;
-    private Button mTaskAddButton;
+    private ImageButton mTaskAddButton;
 
 
     // Firebase instance variables
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mTaskDatabaseReference;
     private DatabaseReference mAllTasksDatabaseReference;
-    private DatabaseReference mTaskNumDatabaseReferenceInbox;
-    private DatabaseReference mTaskNumDatabaseReferenceGeneral;
     private ChildEventListener mChildEventListener;
 
 
@@ -84,13 +83,6 @@ public class SpecialTaskListActivity extends AppCompatActivity {
     //Task unique integer ID (for adding tasks)
     private int taskIdNumber;
 
-    //Task Count in Inbox
-    private int taskCountInbox;
-
-    //Task Count field for a general TaskList
-    private int taskCountGeneral;
-
-
     //SharedPreferences instance
     private SharedPreferences sharedPref;
 
@@ -103,12 +95,6 @@ public class SpecialTaskListActivity extends AppCompatActivity {
 
     //A temporary field to hold the latest task changed - get over Firebase offline-persistence bug
     private Task latestTaskChanged;
-
-    //Flag to prevent infinite loop while updating TaskList taskCount when completing a task
-    private boolean flagCompleted;
-
-    //A flag to avoid incorrect use of onChildChanged when editing Task's priority
-    private boolean priorityChangedFlag=false;
 
 
     @Override
@@ -136,23 +122,22 @@ public class SpecialTaskListActivity extends AppCompatActivity {
 
         // Initialize references to views - relevant for DueToday only, so by default - view.GONE
 
-        mTaskEditText = (EditText) findViewById(R.id.add_task);
+        mTaskEditText = findViewById(R.id.add_task);
         mTaskEditText.setVisibility(View.GONE);
-        mTaskAddButton = (Button) findViewById(R.id.add_task_button);
+        mTaskAddButton = findViewById(R.id.add_task_button);
         mTaskAddButton.setVisibility(View.GONE);
         //Set FireBase DB references
         mAllTasksDatabaseReference = mFirebaseDatabase.getReference().child("users")
                 .child(currentUser).child("allTasks");
         mTaskDatabaseReference = mFirebaseDatabase.getReference().child("users")
                 .child(currentUser).child("TaskLists").child("InboxID").child("tasks");
-        mTaskNumDatabaseReferenceInbox = mFirebaseDatabase.getReference().child("users")
-                .child(currentUser).child("TaskLists").child("InboxID");
         if(currentTaskList.equals("Due TodayID")) {
 
             // Set EditText and Add button as Visible - in case we're in DueToday
-
             mTaskEditText.setVisibility(View.VISIBLE);
             mTaskAddButton.setVisibility(View.VISIBLE);
+            //set onTouch listener for proper animation
+            AdapterUtil.setImageViewClickAnimation(mTaskAddButton);
 
 
             // Enable create button when input is not empty - relevant for DueToday only
@@ -194,11 +179,8 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                     //Create a copy of that Task under "AllTasks" in DB
                     mAllTasksDatabaseReference.child(taskId).setValue(task);
 
-                    //add that task to Inbox (if we're in DueToday TaskList)
-                    mTaskNumDatabaseReferenceInbox.child("taskNum").setValue(taskCountInbox + 1);
                     //Increase TaskIdNumber by 1
                     setNewTaskId(taskIdNumber + 1);
-
 
                     // Clear input box
                     mTaskEditText.setText("");
@@ -208,10 +190,6 @@ public class SpecialTaskListActivity extends AppCompatActivity {
 
 
         }
-
-        //add listener to get the current task count in Inbox TaskList (because the user may have
-        // added a new task to it from DueToday TaskList
-        addTaskNumListenerInbox();
 
         //Set the empty view
         mEmptyStateTextView = (TextView) findViewById(R.id.empty_view);
@@ -266,14 +244,12 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                 @Override
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                     //Show relevant tasks according to the default TaskList we're in - today/week
-                    Log.d("wat", "onChildAdded: ");
                     Task task = dataSnapshot.getValue(Task.class);
                     if(task!=null && task.getDueDate()!=null){
                         if(currentTaskList.equals("Due TodayID")){
                                 try {
                                     if(checkDueDate(TASKS_DUE_TODAY,task.getDueDate())
                                         &&(!task.getCompleted())){
-                                        Log.d("triggered", "onChildAdded: ");
                                         showLoadingIndicator(false);
                                         showEmptyStateView(false);
                                         updateExpandableListView(task);
@@ -316,23 +292,13 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                         //If we moved the task from one TaskList to another, update the UI
                         updateMovedExpandableListView(task);
                     }
-                    else if(priorityChangedFlag){
-                        priorityChangedFlag=false;
-                    }
-                    else{
+                    else if(task.getCompleted()){
                         //In case we completed the task
                         // if it's just the offline-persistence bug causing a double trigger, reset latestTaskChanged
                         if(latestTaskChanged!=null && latestTaskChanged.getCompleted()==task.getCompleted()){
                             latestTaskChanged=null;
                         }
                         else {
-                            //Initialize the reference for this task's TaskList
-                            mTaskNumDatabaseReferenceGeneral = mFirebaseDatabase.getReference().child("users")
-                                    .child(currentUser).child("TaskLists").child(task.getTaskListId());
-                            //Get the task count in this Task's TaskList
-                            //And remove this task from the task count (it has been completed)
-                            addTaskNumListenerGeneral();
-                            latestTaskChanged = task;
                             //Remove the completed task from the UI, it's irrelevant now
                             removeCompletedTaskAnim(task);
                         }
@@ -342,15 +308,13 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                 @SuppressLint("NewApi")
                 public void onChildRemoved(DataSnapshot dataSnapshot) {
                     Task task = dataSnapshot.getValue(Task.class);
-                    if(task!=null){
-                        //if we deleted the task - update the UI
-                        Log.d("wat", "onChildRemoved: "+task.getTitle());
+                    //if we deleted the task - update the UI
+                    if(task!=null)
                         removeFromExpandableListView(task,false);
-                    }
+
 
                 }
                 public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-                    Log.d("wat", "onChildMoved2: ");
                 }
                 public void onCancelled(DatabaseError databaseError) {}
             };
@@ -578,50 +542,6 @@ public class SpecialTaskListActivity extends AppCompatActivity {
         return -1;
     }
 
-    //Add a listener to the number of tasks in Inbox - when we create a new task
-    //due for today in Due Today TaskList, update Inbox's number of tasks
-    private void addTaskNumListenerInbox(){
-        mTaskNumDatabaseReferenceInbox.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                TaskList taskList = dataSnapshot.getValue(TaskList.class);
-                if (taskList != null) {
-                    taskCountInbox = taskList.getTaskNum();
-                }
-
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                System.out.println("The read failed: " + databaseError.getCode());
-            }
-        });
-    }
-
-    //Add a listener to the number of tasks in the TaskList that this task belongs to
-    private void addTaskNumListenerGeneral(){
-        //Set flag to true to avoid an infinite loop while updating the taskNum for that TaskList
-        flagCompleted=true;
-        mTaskNumDatabaseReferenceGeneral.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                TaskList taskList = dataSnapshot.getValue(TaskList.class);
-                if (taskList != null) {
-                    taskCountGeneral = taskList.getTaskNum();
-                    if(flagCompleted) {
-                        flagCompleted=false;
-                        mTaskNumDatabaseReferenceGeneral.child("taskNum").setValue(taskCountGeneral - 1);
-                    }
-                }
-
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                System.out.println("The read failed: " + databaseError.getCode());
-            }
-        });
-    }
     //Check for tasks, in order to correctly show the loading indicator
     // and the EmptyStateTextView
     private void checkForTasks(){
@@ -683,7 +603,6 @@ public class SpecialTaskListActivity extends AppCompatActivity {
         int dueDay=dueCalendar.get(Calendar.DAY_OF_YEAR);
         int dueYear=dueCalendar.getWeekYear();
         int dueWeek=dueCalendar.get(Calendar.WEEK_OF_YEAR);
-//        int dueMonth=dueCalendar.get(Calendar.MONTH);
 
         switch (dueWhen){
             case TASKS_DUE_TODAY:
@@ -697,13 +616,6 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                     return true;
                 }
                 break;
-//            case TASKS_DUE_MONTH:
-//                if(currentMonth==dueMonth){
-//                    return true;
-//                }
-//                break;
-
-
 
         }
         return false;
@@ -721,7 +633,5 @@ public class SpecialTaskListActivity extends AppCompatActivity {
 
     }
 
-    public void setPriorityChangedFlag(boolean b){
-        priorityChangedFlag=b;
-    }
+
 }

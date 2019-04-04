@@ -9,7 +9,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceFragmentCompat;
-import android.util.Log;
 
 public class SettingsActivity extends AppCompatActivity {
     @Override
@@ -26,18 +25,6 @@ public class SettingsActivity extends AppCompatActivity {
             setPreferencesFromResource(R.xml.preferences,rootKey);
 
             //Setup user's available preferences
-
-            //Show createdDate in the Task UI
-            Preference showCreated=findPreference("show_created_date");
-            setPreference(showCreated);
-
-            //Show dueDate in the Task UI
-            Preference showDue=findPreference("show_due_date");
-            setPreference(showDue);
-
-            //Show completedDate in the Task UI
-            Preference showCompleted=findPreference("show_completed_date");
-            setPreference(showCompleted);
 
             //Show Due Today default TaskList
             Preference showDueToday=findPreference("show_due_today");
