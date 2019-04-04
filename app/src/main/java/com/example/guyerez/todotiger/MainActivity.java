@@ -87,6 +87,10 @@ public class MainActivity extends AppCompatActivity {
     //The loading indicator //
     private View loadingIndicator;
 
+    //HashMaps for calculating all the TaskLists' taskCount
+    HashMap<String,Integer> taskListsTaskCount;
+    HashMap<String,Integer> taskListsTasksDueCount;
+
 
     // Firebase instance variables
 
@@ -398,6 +402,7 @@ public class MainActivity extends AppCompatActivity {
         attachDatabaseReadListener();
         attachDatabaseReadListenerForTaskCount();
 
+
         if (!defaultTasksCreated(userId)) {
             initDefaultTaskLists(userId);
         }
@@ -457,6 +462,7 @@ public class MainActivity extends AppCompatActivity {
 
         }
         mTaskListDatabaseReference.addChildEventListener(mChildEventListener);
+
 
     }
     //Remove the databaseReadListener so we don't listen for new TaskLists while the app is paused
@@ -552,12 +558,16 @@ public class MainActivity extends AppCompatActivity {
 
     //Create a new TaskList, update the DataBase, and open the TaskList so the user
     //could enter new tasks immediately.
+    //Add a dummy task to prevent taskCount bug (showing 1 task when there are 0 tasks)
     private void createNewTaskList(String title) {
         Calendar calendar = Calendar.getInstance();
         Date creationDate = calendar.getTime();
         String mTaskListId = mTaskListDatabaseReference.push().getKey();
         TaskList taskList = new TaskList(title, mTaskListId, creationDate);
         mTaskListDatabaseReference.child(mTaskListId).setValue(taskList);
+        Task dummyTask=new Task();
+        dummyTask.setTaskListId(mTaskListId);
+        mAllTasksDatabaseReference.child("dummyTask").setValue(dummyTask);
         openTaskList(taskList);
     }
 
@@ -627,13 +637,17 @@ public class MainActivity extends AppCompatActivity {
             @SuppressLint("NewApi")
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                HashMap<String,Integer> taskListsTaskCount=new HashMap<>();
-                HashMap<String,Integer> taskListsTasksDueCount=new HashMap<>();
-                countDueToday=0;
-                countDueWeek=0;
-                numberOfCompletedTasks=0;
+                setTaskCountersToZero();
                 for(DataSnapshot snapshot : dataSnapshot.getChildren()){
                     Task task = snapshot.getValue(Task.class);
+                    if(task.getTitle().equals("")){
+                        taskListsTaskCount.putIfAbsent(task.getTaskListId(),0);
+                        taskListsTasksDueCount.putIfAbsent(task.getTaskListId(),0);
+                        //This is a dummyTask for preventing taskCount bug
+                        //no need to check it any further
+                        continue;
+
+                    }
                     updateTaskCountInMap(taskListsTaskCount,task.getTaskListId());
                     if (task != null && task.getDueDate()!=null &&(!task.getCompleted())) {
                         updateTaskCountInMap(taskListsTasksDueCount,task.getTaskListId());
@@ -683,13 +697,28 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void setTaskCountersToZero() {
+        taskListsTaskCount=new HashMap<>();
+        taskListsTasksDueCount=new HashMap<>();
+        //Change Inbox taskCount to 0 (the rest are taken care of by dummyTasks)
+        taskListsTaskCount.put("InboxID",0);
+        taskListsTasksDueCount.put("InboxID",0);
+        countDueToday=0;
+        countDueWeek=0;
+        numberOfCompletedTasks=0;
+    }
+
+
     //Update TaskList's task count in a HashMap
     private void updateTaskCountInMap(HashMap<String, Integer> taskListsTaskCount, String taskListId) {
         Integer taskCount=taskListsTaskCount.get(taskListId);
-        if(taskCount==null)
+        if(taskCount==null){
             taskListsTaskCount.put(taskListId,1);
-        else
+        }
+        else{
             taskListsTaskCount.put(taskListId,taskCount+1);
+        }
+
 
     }
 
