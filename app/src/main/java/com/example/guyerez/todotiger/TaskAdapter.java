@@ -75,11 +75,6 @@ public class TaskAdapter extends ArrayAdapter<Task> {
     private Calendar calendar;
     private String currentUser;
 
-    //Show created/due/completed on Task item UI
-    public static boolean showCreated;
-    public static boolean showDue;
-    public static boolean showCompleted;
-
     //Define task priority menu components
     private MenuBuilder menuBuilder;
     private MenuPopupHelper optionsMenu;
@@ -138,10 +133,6 @@ public class TaskAdapter extends ArrayAdapter<Task> {
          final TextView dueDateTextView = (TextView) listItemView.findViewById(R.id.due_date);
         //Get the task's creation date from the currentTask object and set it in the text view
         dueDateTextView.setText(AdapterUtil.getDueOrCompletedDate(currentTask,dueDateTextView,calendar,activity,null));
-        if(!showDue){
-            dueDateTextView.setVisibility(View.GONE);
-        }
-
 
         // Get the Task's priorityImage and allow the user to change the task's priority
         // by clicking on it
@@ -191,7 +182,7 @@ public class TaskAdapter extends ArrayAdapter<Task> {
                 initDatabaseReferences(currentTask);
                     if (isChecked) {
                         //Update the Task as Checked (completed) in the DB and UI
-                        AdapterUtil.updateTaskChecked(titleTextView,dueDateTextView,currentTask,calendar,mTaskDatabaseReference,mAllTasksDatabaseReference);
+                        AdapterUtil.updateTaskChecked(titleTextView,dueDateTextView,currentTask,mTaskDatabaseReference,mAllTasksDatabaseReference,calendar,activity);
                         //cancel task's reminder if it had one, since it's completed
                         AdapterUtil.cancelTaskReminder(currentTask,activity);
                         //After a small delay for better animation effect
@@ -336,11 +327,6 @@ public class TaskAdapter extends ArrayAdapter<Task> {
 
 
     private void initSharedPreferences(){
-        //Get Settings for Task UI preferences
-        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getContext());
-        showCreated=settings.getBoolean("show_created_date",true);
-        showDue=settings.getBoolean("show_due_date",true);
-        showCompleted=settings.getBoolean("show_completed_date",true);
         //Get current logged in user and the current TaskList from SharedPreferences
         final SharedPreferences currentData=getContext().getSharedPreferences("MyPref", Context.MODE_PRIVATE);
         currentUser=currentData.getString("userId",null);

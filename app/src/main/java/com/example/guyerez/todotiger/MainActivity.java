@@ -648,7 +648,9 @@ public class MainActivity extends AppCompatActivity {
                         continue;
 
                     }
-                    updateTaskCountInMap(taskListsTaskCount,task.getTaskListId());
+                    if(!task.getCompleted()){
+                        updateTaskCountInMap(taskListsTaskCount,task.getTaskListId());
+                    }
                     if (task != null && task.getDueDate()!=null &&(!task.getCompleted())) {
                         updateTaskCountInMap(taskListsTasksDueCount,task.getTaskListId());
                         try {

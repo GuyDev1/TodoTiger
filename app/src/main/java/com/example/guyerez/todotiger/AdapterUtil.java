@@ -147,8 +147,10 @@ public class AdapterUtil {
     }
 
     //Update task's checked status - indicating that it's completed.
-    public static void updateTaskChecked(TextView title,TextView dueDateTextView,Task task,Calendar calendar,
-                                   DatabaseReference mTaskDatabaseReference,DatabaseReference mAllTasksDatabaseReference) {
+    public static void updateTaskChecked(TextView title,TextView dueDateTextView,Task task,
+                                         DatabaseReference mTaskDatabaseReference,
+                                         DatabaseReference mAllTasksDatabaseReference,
+                                         Calendar calendar,Activity activity) {
         Date completionDate =calendar.getTime();
 //        title.setBackgroundResource(R.drawable.strike_through);
         title.setPaintFlags(title.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
@@ -156,6 +158,9 @@ public class AdapterUtil {
         mTaskDatabaseReference.child("completionDate").setValue(completionDate);
         mAllTasksDatabaseReference.child("completed").setValue(true);
         mAllTasksDatabaseReference.child("completionDate").setValue(completionDate);
+        //Change dueDateTextView to show completed date
+        dueDateTextView.setText(getDueOrCompletedDate(task,dueDateTextView,calendar,activity
+        ,Boolean.TRUE));
     }
 
     //Cancel the task's reminder
@@ -174,6 +179,7 @@ public class AdapterUtil {
         mTaskDatabaseReference.child("completionDate").setValue(null);
         mAllTasksDatabaseReference.child("completed").setValue(false);
         mAllTasksDatabaseReference.child("completionDate").setValue(null);
+        //Change dueDateTextView to show dueDate again
         dueDateTextView.setText(getDueOrCompletedDate(task,dueDateTextView,calendar,activity,Boolean.FALSE));
     }
 

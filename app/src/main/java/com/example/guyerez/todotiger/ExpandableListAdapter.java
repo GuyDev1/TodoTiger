@@ -206,7 +206,7 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
                 initDatabaseReferences(task);
                     if (isChecked) {
                         //Update the Task as Checked (completed) in the DB and UI
-                        AdapterUtil.updateTaskChecked(title,dueDateTextView,task,calendar,mTaskDatabaseReference,mAllTasksDatabaseReference);
+                        AdapterUtil.updateTaskChecked(title,dueDateTextView,task,mTaskDatabaseReference,mAllTasksDatabaseReference,calendar,activity);
                         //cancel task's reminder if it had one, since it's completed
                         AdapterUtil.cancelTaskReminder(task,activity);
 
