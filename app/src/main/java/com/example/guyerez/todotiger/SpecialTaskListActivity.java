@@ -6,28 +6,23 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.preference.PreferenceManager;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
-import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.util.SparseArray;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ExpandableListView;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import android.widget.ListView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.firebase.database.ChildEventListener;
@@ -35,7 +30,6 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 import java.text.ParseException;
@@ -120,12 +114,11 @@ public class SpecialTaskListActivity extends AppCompatActivity {
         // Initialize Firebase components
         mFirebaseDatabase = FirebaseDatabase.getInstance();
 
-        // Initialize references to views - relevant for DueToday only, so by default - view.GONE
+        // Initialize references to views - LinearLayout that contains EditText and TaskAddButton
+        //Relevant only for Due Today TaskList - so GONE by default.
+        LinearLayout layout=findViewById(R.id.add_task_linear_layout);
+        layout.setVisibility(View.GONE);
 
-        mTaskEditText = findViewById(R.id.add_task);
-        mTaskEditText.setVisibility(View.GONE);
-        mTaskAddButton = findViewById(R.id.add_task_button);
-        mTaskAddButton.setVisibility(View.GONE);
         //Set FireBase DB references
         mAllTasksDatabaseReference = mFirebaseDatabase.getReference().child("users")
                 .child(currentUser).child("allTasks");
@@ -133,8 +126,12 @@ public class SpecialTaskListActivity extends AppCompatActivity {
                 .child(currentUser).child("TaskLists").child("InboxID").child("tasks");
         if(currentTaskList.equals("Due TodayID")) {
 
-            // Set EditText and Add button as Visible - in case we're in DueToday
+            // Set EditText and Add button (and their linear layout)
+            // as Visible - in case we're in DueToday
+            layout.setVisibility(View.VISIBLE);
+            mTaskEditText = findViewById(R.id.add_task);
             mTaskEditText.setVisibility(View.VISIBLE);
+            mTaskAddButton = findViewById(R.id.add_task_button);
             mTaskAddButton.setVisibility(View.VISIBLE);
             //set onTouch listener for proper animation
             AdapterUtil.setImageViewClickAnimation(mTaskAddButton);
