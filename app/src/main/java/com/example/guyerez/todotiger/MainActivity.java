@@ -484,6 +484,7 @@ public class MainActivity extends AppCompatActivity {
         if (v.getId() == R.id.task_list_view) {
             AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
             menu.add(0, 0, 0, "Delete");
+            menu.add(0, 1, 1, "Add Location Reminder");
         }
     }
 
@@ -505,12 +506,24 @@ public class MainActivity extends AppCompatActivity {
                 mTaskListAdapter.remove(taskListClicked);
                 Toast.makeText(this, "Task List deleted!", Toast.LENGTH_LONG).show();
                 break;
+            case 1:
+                openLocationReminderActivity(taskListClicked);
 
             default:
                 break;
 
         }
         return true;
+    }
+
+    private void openLocationReminderActivity(TaskList taskListClicked) {
+        // Create a new intent to view the LocationReminderActivity
+        Intent locationReminderIntent = new Intent(MainActivity.this, LocationReminderActivity.class);
+        //Add the info about this TaskList's title and ID to the intent
+        locationReminderIntent.putExtra("taskListTitle",taskListClicked.getTitle());
+        locationReminderIntent.putExtra("taskListId",taskListClicked.getId());
+        // Send the intent to launch a new activity
+        startActivity(locationReminderIntent);
     }
 
     //When a taskList is deleted - delete all it's tasks (from allTasks list, direct descendants

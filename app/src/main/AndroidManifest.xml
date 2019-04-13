@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.guyerez.todotiger">
-
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <application
         android:name="com.example.guyerez.todotiger.MyFirebaseApp"
         android:allowBackup="true"
@@ -10,6 +11,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyC6x3X1AKZWrhQc2M1MmJK_zYXcoV3a0BE"/>
         <activity android:name=".MainActivity"
             android:configChanges="keyboardHidden|orientation|screenSize">
             <intent-filter>
@@ -19,6 +23,12 @@
             </intent-filter>
         </activity>
         <activity android:name=".TaskActivity"
+            android:parentActivityName=".MainActivity"
+            android:windowSoftInputMode="stateHidden"
+            android:configChanges="keyboardHidden|orientation|screenSize">
+        </activity>
+
+        <activity android:name=".LocationReminderActivity"
             android:parentActivityName=".MainActivity"
             android:windowSoftInputMode="stateHidden"
             android:configChanges="keyboardHidden|orientation|screenSize">
@@ -53,8 +63,11 @@
             android:name="android.support.PARENT_ACTIVITY"
             android:value="com.example.guyerez.todotiger.MainActivity"/>
     </activity>
+
+
+        <service android:name=".GeofenceTransitionService" />
     </application>
 
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+
 
 </manifest>
