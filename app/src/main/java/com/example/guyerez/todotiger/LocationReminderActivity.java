@@ -79,7 +79,7 @@ public class LocationReminderActivity extends AppCompatActivity implements OnMap
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationRequest locationRequest;
     private PendingIntent geoFencePendingIntent;
-    
+
     private int geofenceCreationPhase;
     private Circle geoFenceBorder;
     private TextView currentInstructionTextView;
@@ -127,11 +127,9 @@ public class LocationReminderActivity extends AppCompatActivity implements OnMap
                         break;
                     case CHOOSE_GEOFENCE_MESSAGE:
                         startGeofenceCreationProcess();
-                        showDeleteGeofenceInsideContainer();
                         break;
                     case DELETE_PREVIOUS_GEOFENCE:
                         removeGeofence();
-                        showChooseLocationInsideContainer();
                         break;
                 }
             }
@@ -482,9 +480,9 @@ public class LocationReminderActivity extends AppCompatActivity implements OnMap
                         @Override
                         public void onSuccess(Void aVoid) {
                             notifyGeofenceCreated();
-                            Log.d("wat - got here", "onSuccess: ");
                             saveGeofenceToSharedPref();
                             drawGeofenceBorderOnMap();
+                            showDeleteGeofenceInsideContainer();
                         }
                     })
                     .addOnFailureListener(new OnFailureListener() {
@@ -570,6 +568,7 @@ public class LocationReminderActivity extends AppCompatActivity implements OnMap
                         notifyGeofenceRemoved();
                         removeGeofenceMarkerAndBorder();
                         removeGeofenceFromSharedPref();
+                        showChooseLocationInsideContainer();
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
@@ -604,8 +603,6 @@ public class LocationReminderActivity extends AppCompatActivity implements OnMap
 
         SharedPreferences pref = context.getSharedPreferences("MyPref", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = pref.edit();
-
-        Log.d("wat123", "updateCurrentTaskListForNotification: " + taskListId);
 
         editor.putString("currentTaskList", taskListId);
         editor.putString("currentTaskListTitle", tasklistTitle);
