@@ -1,5 +1,5 @@
 # TodoTiger
-### A nice simple Todo App I created.
+### A nice simple Todo App I developed.
 
 The app uses Google's Firebase platform for authentication and Realtime Database access.
 It also includes a feature not seen in many TODO apps - a location reminder for task lists.
